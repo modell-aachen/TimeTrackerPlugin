@@ -1,0 +1,4 @@
+data/System/TimeTrackerPlugin.txt 0644
+lib/Foswiki/Plugins/TimeTrackerPlugin.pm 0444
+pub/System/TimeTrackerPlugin/timetracker.css 0644
+pub/System/TimeTrackerPlugin/timetracker.js 0644
