@@ -40,3 +40,12 @@ table.TimeTrackerTable th {
 span.TimeTrackerStarted {
     display: none;
 }
+.TimeTrackerBooked .TimeTrackerBook,
+.TimeTrackerActive .TimeTrackerBook,
+.TimeTrackerActive .TimeTrackerUnBook,
+.TimeTrackerUnBook {
+    display: none;
+}
+.TimeTrackerBooked .TimeTrackerUnBook {
+    display: initial;
+}

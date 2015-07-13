@@ -4,12 +4,15 @@ jQuery(function($){
 
     var getTrFor = function($this) {
         return $this.closest('tr');
-    }
+    };
 
     var resumeActivity = function(ev) {
         var $this = $(this);
-        changeActivity(getTrFor($this));
-        $this.closest('.TimeTrackerField').find('div.TimeTrackerSend').click(); // save
+        var $tr = getTrFor($this);
+        if(!($tr.hasClass('TimeTrackerBooked'))) {
+            changeActivity($tr);
+            $this.closest('.TimeTrackerField').find('div.TimeTrackerSend').click(); // save
+        }
     };
 
     var renameActivityHandler = function(ev){
@@ -39,9 +42,13 @@ jQuery(function($){
     var markAsBooked = function(ev) {
         var $this = $(this);
         var $tr = getTrFor($this);
-        $tr.find('.TimeTrackerActivity').unbind('click');
-        $tr.find('.TimeTrackerBook').remove();
         $tr.addClass('TimeTrackerBooked');
+    };
+
+    var markAsUnBooked = function(ev) {
+        var $this = $(this);
+        var $tr = getTrFor($this);
+        $tr.removeClass('TimeTrackerBooked');
     };
 
     var correctActivity = function(ev) {
@@ -98,14 +105,12 @@ jQuery(function($){
             $oldTime.remove();
             var oldTime = $oldTime.text();
             $($oldFirst.find('.TimeTrackerTime')).append('Stopped:&nbsp;'+time+'<br />');
-            $oldFirst.find('.TimeTrackerBook').show();
             var spend = (now.getTime() - oldTime) / 1000. / 60 / 60;
             addTime($oldFirst, spend);
         }
         if($tr.is('tr')) {
             $tr.find('.TimeTrackerTime').append('Started:&nbsp;' + time + '<br />');
             $tr.find('.TimeTrackerTime').append('<span class=\'TimeTrackerStarted\'>' + now.getTime() + '</span>');
-            $tr.find('.TimeTrackerBook').hide();
             $tr.addClass('TimeTrackerActive');
         }
     };
@@ -113,10 +118,9 @@ jQuery(function($){
     var makeClickable = function($tr) {
         $tr.find('.TimeTrackerRename').click(renameActivityHandler);
         $tr.find('.TimeTrackerBook').click(markAsBooked);
+        $tr.find('.TimeTrackerUnBook').click(markAsUnBooked);
         $tr.find('.TimeTrackerCorrection').click(correctActivity);
-        if(!($tr.hasClass('TimeTrackerBooked'))) {
-            $tr.find('.TimeTrackerActivity').click(resumeActivity);
-        }
+        $tr.find('.TimeTrackerActivity').click(resumeActivity);
     };
 
     var sendToServer = function(ev) {
@@ -196,9 +200,8 @@ var $controlls = $('<table class="TimeTrackerControlls" rules="all">    <tbody> 
     var toolsify = function($tr) {
         var $tools = $tr.find('.TimeTrackerTools');
         $tools.append('<div class="TimeTrackerButton TimeTrackerRename">Rename</div><div class="TimeTrackerButton TimeTrackerCorrection">Correction</div>');
-        if(!($tr.hasClass('TimeTrackerBooked') || $tr.hasClass('TimeTrackerActive'))) {
-            $tools.append('<div class="TimeTrackerButton TimeTrackerBook">Book</div>');
-        }
+        $tools.append('<div class="TimeTrackerButton TimeTrackerBook">Book</div>');
+        $tools.append('<div class="TimeTrackerButton TimeTrackerUnBook">Unbook</div>');
         makeClickable($tr);
     }
 
