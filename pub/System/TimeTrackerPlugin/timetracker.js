@@ -18,22 +18,41 @@ jQuery(function($){
     var renameActivityHandler = function(ev){
         var $this = $(this);
         var $parentTr = getTrFor($this);
-        var $activity = $parentTr.find('.TimeTrackerActivity');
+        var $activity = $parentTr.find('.TimeTrackerActivity > div.TimeTrackerValue');
+        var $ticket = $parentTr.find('.TimeTrackerTicketNr > div.TimeTrackerValue');
         var $tools = $parentTr.find('.TimeTrackerTools');
         $tools.hide();
         var submitHandler = function(ev) {
             var $this = $(this);
-            var $input = $parentTr.find(':input');
-            var name = $input[0].value;
-            $input.remove();
-            $activity.html(name);
+
+            var $nameInput = $activity.siblings('input');
+            var name = $nameInput.val();
+            if(name === undefined) name = '';
+
+            var $ticketInput = $ticket.siblings('input');
+            var ticket = $ticketInput.val();
+            if(ticket === undefined) ticket = '';
+
+            $nameInput.remove();
+            $ticketInput.remove();
             $renameUI.remove();
+
+            $activity.html(name);
+            $ticket.html(ticket);
+
             $parentTr.find('.TimeTrackerTools').show();
-            $activity.show();
+            $activity.removeClass('TimeTrackerInRevision');
+            $ticket.removeClass('TimeTrackerInRevision');
         };
+
         var oldName = $activity.html();
-        $activity.parent().append('<input type="text" value="'+oldName+'" />');
-        $activity.hide();
+        $activity.parent().append($('<input class="TimeTrackerWidget" type="text" />').val(oldName));
+        $activity.addClass('TimeTrackerInRevision');
+
+        var oldTicket = $ticket.html();
+        $ticket.parent().append($('<input class="TimeTrackerWidget" type="text" />').val(oldTicket));
+        $ticket.addClass('TimeTrackerInRevision');
+
         var $renameUI = $('<div class="TimeTrackerRenameUI"><div class="TimeTrackerActualRename TimeTrackerButton">Rename</div></div>');
         $tools.parent().append($renameUI);
         $parentTr.find('.TimeTrackerActualRename').click(submitHandler);
@@ -120,7 +139,7 @@ jQuery(function($){
         $tr.find('.TimeTrackerBook').click(markAsBooked);
         $tr.find('.TimeTrackerUnBook').click(markAsUnBooked);
         $tr.find('.TimeTrackerCorrection').click(correctActivity);
-        $tr.find('.TimeTrackerActivity').click(resumeActivity);
+        $tr.find('.TimeTrackerActivity > *, td.TimeTrackerTicketNr > *').click(resumeActivity);
     };
 
     var sendToServer = function(ev) {
@@ -133,8 +152,8 @@ jQuery(function($){
         var $form = $('<form><input type="hidden" name="data" value="" /><input type="hidden" name="web" value="'+foswiki.getPreference('WEB')+'" /><input type="hidden" name="id" value="'+$field.attr('id')+'" /><input type="hidden" name="date" value="'+date+'" /></form>');
         var $clone = $field.clone();
         $clone.find('.TimeTrackerError').remove();
-        $clone.find('.TimeTrackerTools').replaceWith('<div class=\'TimeTrackerTools\'></div>');
-        $clone.find('.TimeTrackerControlls').remove();
+        $clone.find('.TimeTrackerWidget').remove();
+        $clone.find('.TimeTrackerInRevision').removeClass('TimeTrackerInRevision');
         $form.find('input[name=data]').val($clone.wrap('<div>').parent().html()); // XXX Bah!
         var url = foswiki.getPreference('SCRIPTURL') + '/rest/TimeTrackerPlugin/store';
         $.ajax({
@@ -159,6 +178,9 @@ jQuery(function($){
     }
 
     var setup = function() {
+        // convert legacy stuff
+        $('td > div.TimeTrackerActivity').removeClass('TimeTrackerActivity').addClass('TimeTrackerBordered TimeTrackerValue').parent().addClass('TimeTrackerActivity');
+
         $.each($('.TimeTrackerField'), function(idx, el) {
                 setupField(el);
          });
@@ -166,7 +188,27 @@ jQuery(function($){
 
     var setupField = function(field) {
         var $field = $(field);
-var $controlls = $('<table class="TimeTrackerControlls" rules="all">    <tbody>        <tr><td colspan="4"><div class="TimeTrackerNewActivity TimeTrackerButton" style="float:left;">New Activity:</div>&nbsp;<input type="text" class="activityName" /></td></tr>        <tr><td colspan="4"><div class="TimeTrackerStop TimeTrackerButton">Stop acitivies</div></td></tr>        <tr><td colspan="4"><div class="TimeTrackerSend TimeTrackerButton">Send to wiki</div></td></tr>    </tbody></table>');
+        var $controlls = $('<table class="TimeTrackerControlls TimeTrackerWidget" rules="all">' +
+            '<tbody>' +
+                '<tr>' +
+                    '<td colspan="4">' +
+                        '<div class="TimeTrackerNewActivity TimeTrackerButton">New Activity:</div>' +
+                        '<div style="whitespace: no-break;">' +
+                            '<table>' +
+                                '<tr><td><label for="ticketNr">Ticket:</label></td><td><input type="text" name="ticketNr" class="ticketNr" /></td></tr><tr>' +
+                                '<td><label for="ticketNr">Activity:</label></td><td><input type="text" name="activityName" class="activityName" /></td></tr>' +
+                            '</table>' +
+                        '</div>' +
+                    '</td>' +
+                '</tr>' +
+                '<tr>' +
+                    '<td colspan="4"><div class="TimeTrackerStop TimeTrackerButton">Stop acitivies</div></td>' +
+                '</tr>' +
+                '<tr>' +
+                    '<td colspan="4"><div class="TimeTrackerSend TimeTrackerButton">Send to wiki</div></td>' +
+                '</tr>' +
+            '</tbody>' +
+        '</table>');
         $field.append($controlls);
         $controlls.find('div.TimeTrackerSend').click(sendToServer);
         $controlls.find('div.TimeTrackerStop').click(stopActivity);
@@ -181,10 +223,22 @@ var $controlls = $('<table class="TimeTrackerControlls" rules="all">    <tbody> 
             var $this = $(this);
             var $table = $this.closest('.TimeTrackerField').find('.TimeTrackerTable tbody');
             var $tr = getTrFor($this);
-            var input = $tr.find('.activityName')[0];
-            var name = input.value;
-            input.value = '';
-            var $newTr = $('<!--\n--><tr><td><div class="TimeTrackerTools"></div></td><td><div class="TimeTrackerActivity">'+name+'</div></td><td class="TimeTrackerTime"></td><td class="TimeTrackerSpend"></td></tr><!--\n-->');
+
+            var $inputActivity = $tr.find('input.activityName');
+            var name = $inputActivity.val();
+            $inputActivity.val('');
+
+            var $inputTicket = $tr.find('input.ticketNr');
+            var ticket = $inputTicket.val();
+            $inputTicket.val('');
+
+            var $newTr = $('<!--\n--><tr>' +
+                '<td><div class="TimeTrackerTools"></td>' +
+                '<td class="TimeTrackerTicketNr"><div class="TimeTrackerValue TimeTrackerBordered">'+ticket+'</div></td>' +
+                '<td class="TimeTrackerActivity"><div class="TimeTrackerValue TimeTrackerBordered">'+name+'</div></td>' +
+                '<td class="TimeTrackerTime"></td>' +
+                '<td class="TimeTrackerSpend"></td>' +
+            '</tr><!--\n-->'); // the \n is for rcs
             $table.append( $newTr );
             toolsify($newTr);
             changeActivity($newTr);
@@ -199,9 +253,11 @@ var $controlls = $('<table class="TimeTrackerControlls" rules="all">    <tbody> 
 
     var toolsify = function($tr) {
         var $tools = $tr.find('.TimeTrackerTools');
-        $tools.append('<div class="TimeTrackerButton TimeTrackerRename">Rename</div><div class="TimeTrackerButton TimeTrackerCorrection">Correction</div>');
-        $tools.append('<div class="TimeTrackerButton TimeTrackerBook">Book</div>');
-        $tools.append('<div class="TimeTrackerButton TimeTrackerUnBook">Unbook</div>');
+        var $widget = $('<div class="TimeTrackerWidget"></div>');
+        $widget.append('<div class="TimeTrackerButton TimeTrackerRename">Rename</div><div class="TimeTrackerButton TimeTrackerCorrection">Correction</div>');
+        $widget.append('<div class="TimeTrackerButton TimeTrackerBook">Book</div>');
+        $widget.append('<div class="TimeTrackerButton TimeTrackerUnBook">Unbook</div>');
+        $widget.appendTo($tools);
         makeClickable($tr);
     }
 

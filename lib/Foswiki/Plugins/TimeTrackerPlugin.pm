@@ -84,7 +84,7 @@ sub _timetrackerTAG {
 Date: <span class="TimeTrackerDate">$date</span>
 <table class="TimeTrackerTable" rules="all">
     <thead>
-        <tr><th>Tools</th><th> Activity </th><th>Time log</th><th>Time spent</th></tr>
+        <tr><th>Tools</th><th> Ticket </th><th> Activity </th><th>Time log</th><th>Time spent</th></tr>
     </thead><tbody>
     </tbody>
 </table>
