@@ -18,7 +18,7 @@ jQuery(function($){
     var renameActivityHandler = function(ev){
         var $this = $(this);
         var $parentTr = getTrFor($this);
-        var $activity = $parentTr.find('.TimeTrackerActivity > div.TimeTrackerValue');
+        var $activity = $parentTr.find('.TimeTrackerComment > div.TimeTrackerValue');
         var $ticket = $parentTr.find('.TimeTrackerTicketNr > div.TimeTrackerValue');
         var $notes = $parentTr.find('.TimeTrackerNotes > div.TimeTrackerValue');
         var $tools = $parentTr.find('.TimeTrackerTools');
@@ -151,7 +151,7 @@ jQuery(function($){
         $tr.find('.TimeTrackerBook').click(markAsBooked);
         $tr.find('.TimeTrackerUnBook').click(markAsUnBooked);
         $tr.find('.TimeTrackerCorrection').click(correctActivity);
-        $tr.find('.TimeTrackerActivity > *, td.TimeTrackerTicketNr > *, td.TimeTrackerNotes > *').click(resumeActivity);
+        $tr.find('.TimeTrackerComment > *, td.TimeTrackerTicketNr > *, td.TimeTrackerNotes > *').click(resumeActivity);
     };
 
     var sendToServer = function(ev) {
@@ -191,7 +191,7 @@ jQuery(function($){
 
     var setup = function() {
         // convert legacy stuff
-        $('td > div.TimeTrackerActivity').removeClass('TimeTrackerActivity').addClass('TimeTrackerBordered TimeTrackerValue').parent().addClass('TimeTrackerActivity');
+        $('td > div.TimeTrackerComment').removeClass('TimeTrackerComment').addClass('TimeTrackerBordered TimeTrackerValue').parent().addClass('TimeTrackerComment');
 
         $.each($('.TimeTrackerField'), function(idx, el) {
                 setupField(el);
@@ -208,7 +208,7 @@ jQuery(function($){
                         '<div style="whitespace: no-break;">' +
                             '<table>' +
                                 '<tr><td><label for="ticketNr">Ticket:</label></td><td><input type="text" name="ticketNr" class="ticketNr" /></td></tr><tr>' +
-                                '<td><label for="ticketNr">Activity:</label></td><td><input type="text" name="activityName" class="activityName" /></td></tr>' +
+                                '<td><label for="activityComment">Comment:</label></td><td><input type="text" name="activityComment" class="activityComment" /></td></tr>' +
                                 '<td><label for="activityNotes">Notes:</label></td><td><input type="text" name="activityNotes" class="activityNotes" /></td></tr>' +
                             '</table>' +
                         '</div>' +
@@ -237,7 +237,7 @@ jQuery(function($){
             var $table = $this.closest('.TimeTrackerField').find('.TimeTrackerTable tbody');
             var $tr = getTrFor($this);
 
-            var $inputActivity = $tr.find('input.activityName');
+            var $inputActivity = $tr.find('input.activityComment');
             var name = $inputActivity.val();
             $inputActivity.val('');
 
@@ -252,7 +252,7 @@ jQuery(function($){
             var $newTr = $('<!--\n--><tr>' +
                 '<td><div class="TimeTrackerTools"></td>' +
                 '<td class="TimeTrackerTicketNr"><div class="TimeTrackerValue TimeTrackerBordered">'+ticket+'</div></td>' +
-                '<td class="TimeTrackerActivity"><div class="TimeTrackerValue TimeTrackerBordered">'+name+'</div></td>' +
+                '<td class="TimeTrackerComment"><div class="TimeTrackerValue TimeTrackerBordered">'+name+'</div></td>' +
                 '<td class="TimeTrackerNotes"><div class="TimeTrackerValue TimeTrackerBordered">'+notes+'</div></td>' +
                 '<td class="TimeTrackerTime"></td>' +
                 '<td class="TimeTrackerSpend"></td>' +
