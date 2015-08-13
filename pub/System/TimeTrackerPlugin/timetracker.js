@@ -252,6 +252,7 @@ jQuery(function($){
             var $newTr = $('<!--\n--><tr>' +
                 '<td><div class="TimeTrackerTools"></td>' +
                 '<td class="TimeTrackerTicketNr"><div class="TimeTrackerValue TimeTrackerBordered">'+ticket+'</div></td>' +
+                '<td class="TimeTrackerRedmineActivity"></td>' +
                 '<td class="TimeTrackerComment"><div class="TimeTrackerValue TimeTrackerBordered">'+name+'</div></td>' +
                 '<td class="TimeTrackerNotes"><div class="TimeTrackerValue TimeTrackerBordered">'+notes+'</div></td>' +
                 '<td class="TimeTrackerTime"></td>' +
