@@ -20,6 +20,7 @@ jQuery(function($){
         var $parentTr = getTrFor($this);
         var $activity = $parentTr.find('.TimeTrackerActivity > div.TimeTrackerValue');
         var $ticket = $parentTr.find('.TimeTrackerTicketNr > div.TimeTrackerValue');
+        var $notes = $parentTr.find('.TimeTrackerNotes > div.TimeTrackerValue');
         var $tools = $parentTr.find('.TimeTrackerTools');
         $tools.hide();
         var submitHandler = function(ev) {
@@ -33,16 +34,23 @@ jQuery(function($){
             var ticket = $ticketInput.val();
             if(ticket === undefined) ticket = '';
 
+            var $notesInput = $notes.siblings('input');
+            var notes = $notesInput.val();
+            if(notes === undefined) notes = '';
+
             $nameInput.remove();
             $ticketInput.remove();
+            $notesInput.remove();
             $renameUI.remove();
 
             $activity.html(name);
             $ticket.html(ticket);
+            $notes.html(notes);
 
             $parentTr.find('.TimeTrackerTools').show();
             $activity.removeClass('TimeTrackerInRevision');
             $ticket.removeClass('TimeTrackerInRevision');
+            $notes.removeClass('TimeTrackerInRevision');
         };
 
         var oldName = $activity.html();
@@ -52,6 +60,10 @@ jQuery(function($){
         var oldTicket = $ticket.html();
         $ticket.parent().append($('<input class="TimeTrackerWidget" type="text" />').val(oldTicket));
         $ticket.addClass('TimeTrackerInRevision');
+
+        var oldNotes = $notes.html();
+        $notes.parent().append($('<input class="TimeTrackerWidget" type="text" />').val(oldNotes));
+        $notes.addClass('TimeTrackerInRevision');
 
         var $renameUI = $('<div class="TimeTrackerRenameUI"><div class="TimeTrackerActualRename TimeTrackerButton">Rename</div></div>');
         $tools.parent().append($renameUI);
@@ -139,7 +151,7 @@ jQuery(function($){
         $tr.find('.TimeTrackerBook').click(markAsBooked);
         $tr.find('.TimeTrackerUnBook').click(markAsUnBooked);
         $tr.find('.TimeTrackerCorrection').click(correctActivity);
-        $tr.find('.TimeTrackerActivity > *, td.TimeTrackerTicketNr > *').click(resumeActivity);
+        $tr.find('.TimeTrackerActivity > *, td.TimeTrackerTicketNr > *, td.TimeTrackerNotes > *').click(resumeActivity);
     };
 
     var sendToServer = function(ev) {
@@ -197,6 +209,7 @@ jQuery(function($){
                             '<table>' +
                                 '<tr><td><label for="ticketNr">Ticket:</label></td><td><input type="text" name="ticketNr" class="ticketNr" /></td></tr><tr>' +
                                 '<td><label for="ticketNr">Activity:</label></td><td><input type="text" name="activityName" class="activityName" /></td></tr>' +
+                                '<td><label for="activityNotes">Notes:</label></td><td><input type="text" name="activityNotes" class="activityNotes" /></td></tr>' +
                             '</table>' +
                         '</div>' +
                     '</td>' +
@@ -232,10 +245,15 @@ jQuery(function($){
             var ticket = $inputTicket.val();
             $inputTicket.val('');
 
+            var $inputNotes = $tr.find('input.activityNotes');
+            var notes = $inputNotes.val();
+            $inputNotes.val('');
+
             var $newTr = $('<!--\n--><tr>' +
                 '<td><div class="TimeTrackerTools"></td>' +
                 '<td class="TimeTrackerTicketNr"><div class="TimeTrackerValue TimeTrackerBordered">'+ticket+'</div></td>' +
                 '<td class="TimeTrackerActivity"><div class="TimeTrackerValue TimeTrackerBordered">'+name+'</div></td>' +
+                '<td class="TimeTrackerNotes"><div class="TimeTrackerValue TimeTrackerBordered">'+notes+'</div></td>' +
                 '<td class="TimeTrackerTime"></td>' +
                 '<td class="TimeTrackerSpend"></td>' +
             '</tr><!--\n-->'); // the \n is for rcs
