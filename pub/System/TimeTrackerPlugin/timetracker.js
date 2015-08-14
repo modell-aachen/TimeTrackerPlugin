@@ -159,6 +159,16 @@ jQuery(function($){
         var $message = $('<div class="TimeTrackerMessage">...sending</div>');
         $this.append($message);
         $this.find('.TimeTrackerError').remove();
+
+        var sum = 0;
+        $('.TimeTrackerSpend').each(function() { sum += new Number($(this).text()); });
+        var $sum = $('.TimeTrackerSum');
+        if(!$sum.length) {
+            $('.TimeTrackerTable').after('<span>Total time spend:<span>&nbsp;<span class="TimeTrackerSum"></span>');
+            $sum = $('.TimeTrackerSum');
+        }
+        $sum.text(sum);
+
         var $field = $this.closest('.TimeTrackerField');
         var date = $field.find('.TimeTrackerDate').text();
         var $form = $('<form><input type="hidden" name="data" value="" /><input type="hidden" name="web" value="'+foswiki.getPreference('WEB')+'" /><input type="hidden" name="id" value="'+$field.attr('id')+'" /><input type="hidden" name="date" value="'+date+'" /></form>');
