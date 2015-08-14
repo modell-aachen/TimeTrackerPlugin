@@ -164,7 +164,7 @@ jQuery(function($){
         $('.TimeTrackerSpend').each(function() { sum += new Number($(this).text()); });
         var $sum = $('.TimeTrackerSum');
         if(!$sum.length) {
-            $('.TimeTrackerTable').after('<span>Total time spend:<span>&nbsp;<span class="TimeTrackerSum"></span>');
+            $('.TimeTrackerTable').after('<span>Total time spent:<span>&nbsp;<span class="TimeTrackerSum"></span>');
             $sum = $('.TimeTrackerSum');
         }
         $sum.text(sum);
