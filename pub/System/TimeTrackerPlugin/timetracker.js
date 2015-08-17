@@ -210,9 +210,82 @@ jQuery(function($){
          });
     }
 
+    var addActivity = function($table, ticket, comment, notes) {
+        if(!ticket) ticket = '';
+        if(!comment) comment = '';
+        if(!notes) notes = '';
+
+        var $newTr = $('<!--\n--><tr>' +
+            '<td><div class="TimeTrackerTools"></td>' +
+            '<td class="TimeTrackerTicketNr"><div class="TimeTrackerValue TimeTrackerResume">'+ticket+'</div></td>' +
+            '<td class="TimeTrackerRedmineActivity"></td>' +
+            '<td class="TimeTrackerComment"><div class="TimeTrackerValue TimeTrackerResume">'+comment+'</div></td>' +
+            '<td class="TimeTrackerNotes"><div class="TimeTrackerValue TimeTrackerResume">'+notes+'</div></td>' +
+            '<td class="TimeTrackerTime"></td>' +
+            '<td class="TimeTrackerSpend"></td>' +
+        '</tr><!--\n-->'); // the \n is for rcs
+        $table.append( $newTr );
+        toolsify($newTr);
+        changeActivity($newTr);
+        $table.closest('.TimeTrackerField').find('div.TimeTrackerSend').click(); // save
+    }
+
+    var resumeQuickAction = function(ev) {
+        var $this = $(this);
+        var $table = $this.closest('.TimeTrackerField').find('.TimeTrackerTable tbody');
+
+        var ticket = $this.attr('ticket');
+        var comment = $this.attr('comment');
+        var notes = $this.attr('notes');
+
+        var $tr;
+        $table.find('tr').each(function() {
+            var $this = $(this);
+            if(ticket && $this.find('.TimeTrackerTicketNr .TimeTrackerValue').text() !== ticket) return;
+            if(comment && $this.find('.TimeTrackerComment .TimeTrackerValue').text() !== comment) return;
+            if($this.hasClass('TimeTrackerBooked')) return;
+
+            $tr = $this;
+        });
+
+        if($tr) {
+            changeActivity($tr);
+            $this.closest('.TimeTrackerField').find('div.TimeTrackerSend').click(); // save
+        } else {
+            addActivity($table, ticket, comment, notes);
+        }
+    };
+
+    var addTemplate = function(ev) {
+        var $this = $(this);
+        var $table = $this.closest('.TimeTrackerField').find('.TimeTrackerTable tbody');
+
+        var ticket = $this.attr('ticket');
+        var comment = $this.attr('comment');
+        var notes = $this.attr('notes');
+
+        addActivity($table, ticket, comment, notes);
+    };
+
     var setupField = function(field) {
         var $field = $(field);
-        var $controlls = $('<table class="TimeTrackerControlls TimeTrackerWidget" rules="all">' +
+        var id = $field.attr('id');
+
+        var options;
+        if(id) {
+            var optionsJSON = jQuery('script.TimeTrackerOptions[for="Test"]').html();
+            if(optionsJSON.length) {
+                options = window.JSON.parse(optionsJSON);
+            } else {
+                options = {};
+            }
+        } else {
+            options = {};
+        }
+
+        var $controlls = $('<div class="TimeTrackerControlls TimeTrackerWidget"></div>');
+
+        var $utilities = $('<div class="TimeTrackerGeneralUtilities"></div>').append('<table>' +
             '<tbody>' +
                 '<tr>' +
                     '<td colspan="4">' +
@@ -234,6 +307,68 @@ jQuery(function($){
                 '</tr>' +
             '</tbody>' +
         '</table>');
+        $controlls.append($utilities);
+
+        var $quickies = $('<div class="TimeTrackerQuickActions"></div>'); // Not to be confused with Q.wikies
+        if(options.quickactions) $.each(options.quickactions, function(idx, item) {
+            var $action = $('<div class="TimeTrackerButton"></div>');
+
+            var ticket = item.ticket;
+            if(!ticket.length) ticket = '';
+
+            var comment = item.comment;
+            if(!comment || !comment.length) comment = '';
+
+            var notes = item.notes;
+            if(!notes || !notes.length) notes = '';
+
+            var label = item.label;
+            if(!label || !label.length) label = ticket;
+            if(!label.length) label = '(unknown)';
+
+            $action.text(label);
+            $action.attr('ticket', ticket);
+            $action.attr('comment', comment);
+            $action.attr('notes', notes);
+            $action.click(resumeQuickAction);
+
+            $quickies.append($action);
+        });
+        if($quickies.children().length) {
+            $quickies.prepend('<div class="TimeTrackerHeader">Quicklinks</div>');
+        }
+        $controlls.append($quickies);
+
+        var $templates = $('<div class="TimeTrackerTemplates"></div>');
+        if(options.templates) $.each(options.templates, function(idx, item) {
+            var $action = $('<div class="TimeTrackerButton"></div>');
+
+            var ticket = item.ticket;
+            if(!ticket || !ticket.length) ticket = '';
+
+            var comment = item.comment;
+            if(!comment || !comment.length) comment = '';
+
+            var notes = item.notes;
+            if(!notes || !notes.length) notes = '';
+
+            var label = item.label;
+            if(!label || !label.length) label = ticket;
+            if(!label.length) label = '(unknown)';
+
+            $action.text(label);
+            $action.attr('ticket', ticket);
+            $action.attr('comment', comment);
+            $action.attr('notes', notes);
+            $action.click(addTemplate);
+
+            $templates.append($action);
+        });
+        if($templates.children().length) {
+            $templates.prepend('<div class="TimeTrackerHeader">Templates</div>');
+        }
+        $controlls.append($templates);
+
         $field.append($controlls);
         $controlls.find('div.TimeTrackerSend').click(sendToServer);
         $controlls.find('div.TimeTrackerStop').click(stopActivity);
@@ -261,19 +396,7 @@ jQuery(function($){
             var notes = $inputNotes.val();
             $inputNotes.val('');
 
-            var $newTr = $('<!--\n--><tr>' +
-                '<td><div class="TimeTrackerTools"></td>' +
-                '<td class="TimeTrackerTicketNr"><div class="TimeTrackerValue TimeTrackerResume">'+ticket+'</div></td>' +
-                '<td class="TimeTrackerRedmineActivity"></td>' +
-                '<td class="TimeTrackerComment"><div class="TimeTrackerValue TimeTrackerResume">'+name+'</div></td>' +
-                '<td class="TimeTrackerNotes"><div class="TimeTrackerValue TimeTrackerResume">'+notes+'</div></td>' +
-                '<td class="TimeTrackerTime"></td>' +
-                '<td class="TimeTrackerSpend"></td>' +
-            '</tr><!--\n-->'); // the \n is for rcs
-            $table.append( $newTr );
-            toolsify($newTr);
-            changeActivity($newTr);
-            $field.find('div.TimeTrackerSend').click(); // save
+            addActivity($table, ticket, name, notes);
         });
         if($field.find('.TimeTrackerDate').text() !== getDate()) {
             $field.find('.TimeTrackerDate').after('<span class="TimeTrackerError">&nbsp;&larr;&nbsp;Today is '+getDate()+'!</span>');

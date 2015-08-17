@@ -71,6 +71,8 @@ sub _timetrackerTAG {
     my $id = $params->{_DEFAULT};
     return 'Please specify id' unless $id;
 
+    my $options = $params->{options} || '';
+
     my $date = Foswiki::Func::formatTime(time(), '$year$mo$day');
     my $todaystopic = "${id}_$date";
 
@@ -89,7 +91,7 @@ Date: <span class="TimeTrackerDate">$date</span>
     </tbody>
 </table>
 </div>
-%TIMETRACKERJS%
+%TIMETRACKERJS{id="$id"}%
 TABLE
     }
 
@@ -97,11 +99,20 @@ TABLE
 }
 
 sub _timetrackerjsTAG {
+    my($session, $params, $topic, $web, $topicObject) = @_;
+
+    my $id = $params->{id} || '';
+    my $options = Foswiki::Func::expandCommonVariables("\%TIMETRACKER_OPTIONS_$id\{default=\"\"\}\%", $topic, $web, $topicObject) || '{}';
+
     my $css = css();
     my $js = js();
 
     Foswiki::Func::addToZone("script", "TimeTrackerPlugin", <<SCRIPT, "JQUERYPLUGIN");
 $css$js
+SCRIPT
+
+    Foswiki::Func::addToZone("script", "TimeTrackerPluginOptions$id", <<SCRIPT, "JQUERYPLUGIN");
+<script type='application/json' class='TimeTrackerOptions' for='$id'>$options</script>
 SCRIPT
     return '';
 }
@@ -133,7 +144,7 @@ sub restStore {
         return "Error: $error";
     }
 
-    $data .= '%TIMETRACKERJS%';
+    $data .= "\%TIMETRACKERJS{id=\"$id\"}\%";
 
     $date = @$date[0] if $date;
     $date = Foswiki::Func::formatTime(time(), '$year$mo$day') unless $date;
