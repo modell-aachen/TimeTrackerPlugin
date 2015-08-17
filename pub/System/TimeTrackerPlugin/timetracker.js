@@ -217,7 +217,7 @@ jQuery(function($){
                 '<tr>' +
                     '<td colspan="4">' +
                         '<div class="TimeTrackerNewActivity TimeTrackerButton">New Activity:</div>' +
-                        '<div style="whitespace: no-break;">' +
+                        '<div style="whitespace: no-break;" class="TimeTrackerInstantEnterDeluxe">' +
                             '<table>' +
                                 '<tr><td><label for="ticketNr">Ticket:</label></td><td><input type="text" name="ticketNr" class="ticketNr" /></td></tr><tr>' +
                                 '<td><label for="activityComment">Comment:</label></td><td><input type="text" name="activityComment" class="activityComment" /></td></tr>' +
@@ -278,8 +278,13 @@ jQuery(function($){
         if($field.find('.TimeTrackerDate').text() !== getDate()) {
             $field.find('.TimeTrackerDate').after('<span class="TimeTrackerError">&nbsp;&larr;&nbsp;Today is '+getDate()+'!</span>');
         }
-
-
+        $controlls.find('.TimeTrackerInstantEnterDeluxe input').keypress(function(ev) {
+            if(ev.which === 13) {
+                $controlls.find('.TimeTrackerNewActivity').click();
+                return false;
+            }
+            return true;
+        });
     }
 
     var toolsify = function($tr) {
