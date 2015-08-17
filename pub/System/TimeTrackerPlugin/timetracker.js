@@ -151,12 +151,13 @@ jQuery(function($){
         $tr.find('.TimeTrackerBook').click(markAsBooked);
         $tr.find('.TimeTrackerUnBook').click(markAsUnBooked);
         $tr.find('.TimeTrackerCorrection').click(correctActivity);
-        $tr.find('.TimeTrackerComment > *, td.TimeTrackerTicketNr > *, td.TimeTrackerNotes > *').click(resumeActivity);
+        $tr.find('.TimeTrackerResume').click(resumeActivity);
     };
 
     var sendToServer = function(ev) {
         var $this = $(this);
         var $message = $('<div class="TimeTrackerMessage">...sending</div>');
+
         $this.append($message);
         $this.find('.TimeTrackerError').remove();
 
@@ -201,7 +202,8 @@ jQuery(function($){
 
     var setup = function() {
         // convert legacy stuff
-        $('td > div.TimeTrackerComment').removeClass('TimeTrackerComment').addClass('TimeTrackerBordered TimeTrackerValue').parent().addClass('TimeTrackerComment');
+        $('td > div.TimeTrackerComment').removeClass('TimeTrackerComment').addClass('TimeTrackerResume TimeTrackerValue').parent().addClass('TimeTrackerComment');
+        $('.TimeTrackerBordered').removeClass('TimeTrackerBordered').addClass('TimeTrackerResume');
 
         $.each($('.TimeTrackerField'), function(idx, el) {
                 setupField(el);
@@ -261,10 +263,10 @@ jQuery(function($){
 
             var $newTr = $('<!--\n--><tr>' +
                 '<td><div class="TimeTrackerTools"></td>' +
-                '<td class="TimeTrackerTicketNr"><div class="TimeTrackerValue TimeTrackerBordered">'+ticket+'</div></td>' +
+                '<td class="TimeTrackerTicketNr"><div class="TimeTrackerValue TimeTrackerResume">'+ticket+'</div></td>' +
                 '<td class="TimeTrackerRedmineActivity"></td>' +
-                '<td class="TimeTrackerComment"><div class="TimeTrackerValue TimeTrackerBordered">'+name+'</div></td>' +
-                '<td class="TimeTrackerNotes"><div class="TimeTrackerValue TimeTrackerBordered">'+notes+'</div></td>' +
+                '<td class="TimeTrackerComment"><div class="TimeTrackerValue TimeTrackerResume">'+name+'</div></td>' +
+                '<td class="TimeTrackerNotes"><div class="TimeTrackerValue TimeTrackerResume">'+notes+'</div></td>' +
                 '<td class="TimeTrackerTime"></td>' +
                 '<td class="TimeTrackerSpend"></td>' +
             '</tr><!--\n-->'); // the \n is for rcs

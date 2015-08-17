@@ -21,9 +21,10 @@ table.TimeTrackerTable th {
     background-color: #9d9;
     border: 1px solid black;
 }
-.TimeTrackerBordered {
+.TimeTrackerResume {
     border: 1px solid black;
     height: 100%;
+    cursor: pointer;
 }
 .TimeTrackerBooked .TimeTrackerBordered {
     border: none;
@@ -39,6 +40,7 @@ table.TimeTrackerTable th {
     border: 1px solid #aaa;
     margin: 1px;
     padding: 1px;
+    cursor: pointer;
 }
 span.TimeTrackerStarted {
     display: none;
