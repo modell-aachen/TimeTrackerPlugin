@@ -274,7 +274,7 @@ jQuery(function($){
         var options;
         if(id) {
             var optionsJSON = jQuery('script.TimeTrackerOptions[for="Test"]').html();
-            if(optionsJSON.length) {
+            if(optionsJSON && optionsJSON.length) {
                 options = window.JSON.parse(optionsJSON);
             } else {
                 options = {};
