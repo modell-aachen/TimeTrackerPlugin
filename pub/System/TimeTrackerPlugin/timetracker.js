@@ -314,7 +314,7 @@ jQuery(function($){
             var $action = $('<div class="TimeTrackerButton"></div>');
 
             var ticket = item.ticket;
-            if(!ticket.length) ticket = '';
+            if(!ticket || !ticket.length) ticket = '';
 
             var comment = item.comment;
             if(!comment || !comment.length) comment = '';
