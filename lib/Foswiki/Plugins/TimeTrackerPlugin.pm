@@ -60,7 +60,7 @@ sub initPlugin {
 sub css {
     return <<CSS;
 <style media="all" type="text/css" >
-    \@import url(%PUBURLPATH%/%SYSTEMWEB%/TimeTrackerPlugin/timetracker.css?r=$RELEASE)
+    \@import url("%PUBURLPATH%/%SYSTEMWEB%/TimeTrackerPlugin/timetracker.css?r=$RELEASE")
 </style>
 CSS
 }
