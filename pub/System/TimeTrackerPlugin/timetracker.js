@@ -336,8 +336,8 @@ jQuery(function($){
         });
         if($quickies.children().length) {
             $quickies.prepend('<div class="TimeTrackerHeader">Quicklinks</div>');
+            $controlls.append($quickies);
         }
-        $controlls.append($quickies);
 
         var $templates = $('<div class="TimeTrackerTemplates"></div>');
         if(options.templates) $.each(options.templates, function(idx, item) {
@@ -366,8 +366,8 @@ jQuery(function($){
         });
         if($templates.children().length) {
             $templates.prepend('<div class="TimeTrackerHeader">Templates</div>');
+            $controlls.append($templates);
         }
-        $controlls.append($templates);
 
         $field.append($controlls);
         $controlls.find('div.TimeTrackerSend').click(sendToServer);
