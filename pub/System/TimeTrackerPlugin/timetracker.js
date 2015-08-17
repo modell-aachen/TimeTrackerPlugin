@@ -273,7 +273,7 @@ jQuery(function($){
 
         var options;
         if(id) {
-            var optionsJSON = jQuery('script.TimeTrackerOptions[for="Test"]').html();
+            var optionsJSON = jQuery('script.TimeTrackerOptions[for="'+id+'"]').html();
             if(optionsJSON && optionsJSON.length) {
                 options = window.JSON.parse(optionsJSON);
             } else {
