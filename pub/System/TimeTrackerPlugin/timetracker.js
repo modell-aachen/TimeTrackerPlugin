@@ -324,6 +324,7 @@ jQuery(function($){
 
             var label = item.label;
             if(!label || !label.length) label = ticket;
+            if(!label || !label.length) label = comment;
             if(!label.length) label = '(unknown)';
 
             $action.text(label);
@@ -354,6 +355,7 @@ jQuery(function($){
 
             var label = item.label;
             if(!label || !label.length) label = ticket;
+            if(!label || !label.length) label = comment;
             if(!label.length) label = '(unknown)';
 
             $action.text(label);
