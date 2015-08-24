@@ -26,6 +26,9 @@ table.TimeTrackerTable th {
     height: 100%;
     cursor: pointer;
 }
+.TimeTrackerBooked .TimeTrackerResume {
+    cursor: inherit;
+}
 .TimeTrackerBooked .TimeTrackerBordered {
     border: none;
 }
