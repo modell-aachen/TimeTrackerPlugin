@@ -309,8 +309,7 @@ jQuery(function($){
         '</table>');
         $controlls.append($utilities);
 
-        var $quickies = $('<div class="TimeTrackerQuickActions"></div>'); // Not to be confused with Q.wikies
-        if(options.quickactions) $.each(options.quickactions, function(idx, item) {
+        var createAction = function(item) {
             var $action = $('<div class="TimeTrackerButton"></div>');
 
             var ticket = item.ticket;
@@ -327,10 +326,24 @@ jQuery(function($){
             if(!label || !label.length) label = comment;
             if(!label.length) label = '(unknown)';
 
+            var title = '';
+            if(ticket) title = 'Ticket: ' + ticket;
+            if(comment) title += (title ? ' ' : '') + 'Comment: ' + comment;
+            if(notes) title += (title ? ' ' : '') + 'Notes: ' + notes;
+
             $action.text(label);
+            $action.attr('title', title);
             $action.attr('ticket', ticket);
             $action.attr('comment', comment);
             $action.attr('notes', notes);
+
+            return $action;
+        };
+
+        var $quickies = $('<div class="TimeTrackerQuickActions"></div>'); // Not to be confused with Q.wikies
+        if(options.quickactions) $.each(options.quickactions, function(idx, item) {
+            var $action = createAction(item);
+
             $action.click(resumeQuickAction);
 
             $quickies.append($action);
@@ -342,26 +355,8 @@ jQuery(function($){
 
         var $templates = $('<div class="TimeTrackerTemplates"></div>');
         if(options.templates) $.each(options.templates, function(idx, item) {
-            var $action = $('<div class="TimeTrackerButton"></div>');
+            var $action = createAction(item);
 
-            var ticket = item.ticket;
-            if(!ticket || !ticket.length) ticket = '';
-
-            var comment = item.comment;
-            if(!comment || !comment.length) comment = '';
-
-            var notes = item.notes;
-            if(!notes || !notes.length) notes = '';
-
-            var label = item.label;
-            if(!label || !label.length) label = ticket;
-            if(!label || !label.length) label = comment;
-            if(!label.length) label = '(unknown)';
-
-            $action.text(label);
-            $action.attr('ticket', ticket);
-            $action.attr('comment', comment);
-            $action.attr('notes', notes);
             $action.click(addTemplate);
 
             $templates.append($action);
