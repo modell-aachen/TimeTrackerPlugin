@@ -15,6 +15,19 @@ jQuery(function($){
         }
     };
 
+    var formater = function (object) {
+
+        if ($.isEmptyObject(object)) {
+            return
+        }
+        
+        var string = object.subject;
+        var length = 60;
+        var trimmedString = string.length > length ? string.substring(0, length - 3) + "..." : string.substring(0, length);
+        object.ticket_verbose = object.tracker+" #"+object.issue_id+": "+trimmedString
+        return  object.ticket_verbose
+    }
+
     var renameActivityHandler = function(ev){
         var $this = $(this);
         var $parentTr = getTrFor($this);
@@ -39,6 +52,7 @@ jQuery(function($){
             if(notes === undefined) notes = '';
 
             $nameInput.remove();
+            $ticketInput.select2('destroy');
             $ticketInput.remove();
             $notesInput.remove();
             $renameUI.remove();
@@ -58,7 +72,31 @@ jQuery(function($){
         $activity.addClass('TimeTrackerInRevision');
 
         var oldTicket = $ticket.html();
-        $ticket.parent().append($('<input class="TimeTrackerWidget" type="text" />').val(oldTicket));
+        var $input_ticket = $('<input class="TimeTrackerWidget" type="text" />').val(oldTicket);
+        $ticket.parent().append($input_ticket);
+        $input_ticket.select2({
+            width: "150px",
+            minimumInputLength: 3,
+            ajax: {
+                url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_issue"),
+                dataType: 'json',
+                delay: 250,
+                data: function (term) {return {q: term};},
+                results: function (data) { return { results: data }}
+            },
+            initSelection: function(element, callback) {
+                var id = $(element).val();
+                callback({issue_id: id, subject: '', tracker: ''})
+            },
+            formatResult: formater,
+            formatSelection: formater,
+            id: "issue_id"
+        }).on("change", function(e) {
+            console.log ($notes);
+            var $input = $notes.siblings('input')
+            $input.val($input.val() + " " + $(e.target).select2('data').subject);
+        });
+
         $ticket.addClass('TimeTrackerInRevision');
 
         var oldNotes = $notes.html();
@@ -444,19 +482,6 @@ jQuery(function($){
             addActivity($table, ticket, name, notes);
         });
 
-
-        function formater(object) {
-
-            if ($.isEmptyObject(object)) {
-                return
-            }
-            
-            var string = object.subject;
-            var length = 60;
-            var trimmedString = string.length > length ? string.substring(0, length - 3) + "..." : string.substring(0, length);
-            object.ticket_verbose = object.tracker+" #"+object.issue_id+": "+trimmedString
-            return  object.ticket_verbose
-        }
 
         $controlls.find("input.ticketNr").select2({
             width: "150px",
