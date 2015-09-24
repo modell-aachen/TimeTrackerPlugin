@@ -474,6 +474,7 @@ jQuery(function($){
             var $inputTicket = $tr.find('input.ticketNr');
             var ticket = $inputTicket.val();
             $inputTicket.val('');
+            $inputTicket.select2('data', {});
 
             var $inputNotes = $tr.find('input.activityNotes');
             var notes = $inputNotes.val();
