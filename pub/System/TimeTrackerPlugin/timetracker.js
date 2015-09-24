@@ -395,6 +395,37 @@ jQuery(function($){
 
             addActivity($table, ticket, name, notes);
         });
+
+
+        function formater(object) {
+
+            if ($.isEmptyObject(object)) {
+                return
+            }
+            
+            var string = object.subject;
+            var length = 60;
+            var trimmedString = string.length > length ? string.substring(0, length - 3) + "..." : string.substring(0, length);
+            object.ticket_verbose = object.tracker+" #"+object.issue_id+": "+trimmedString
+            return  object.ticket_verbose
+        }
+
+        $controlls.find("input.ticketNr").select2({
+            width: "150px",
+            minimumInputLength: 3,
+            ajax: {
+                url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_issue"),
+                dataType: 'json',
+                delay: 250,
+                data: function (term) {return {q: term};},
+                results: function (data) { return { results: data }}
+            },
+            formatResult: formater,
+            formatSelection: formater,
+            id: "issue_id"
+        });
+
+
         if($field.find('.TimeTrackerDate').text() !== getDate()) {
             $field.find('.TimeTrackerDate').after('<span class="TimeTrackerError">&nbsp;&larr;&nbsp;Today is '+getDate()+'!</span>');
         }
