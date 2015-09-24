@@ -50,10 +50,16 @@ span.TimeTrackerStarted {
 }
 .TimeTrackerBooked .TimeTrackerBook,
 .TimeTrackerActive .TimeTrackerBook,
+.TimeTrackerActive .TimeTrackerSend2R,
 .TimeTrackerActive .TimeTrackerUnBook,
 .TimeTrackerUnBook {
     display: none;
 }
+
+.TimeTrackerBooked .TimeTrackerSend2R {
+    display: none;
+}
+
 .TimeTrackerBooked .TimeTrackerUnBook {
     display: initial;
 }

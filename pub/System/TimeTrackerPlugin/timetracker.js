@@ -116,6 +116,41 @@ jQuery(function($){
         $parentTr.find('.TimeTrackerActualCorrection').click(submitHandler);
     };
 
+    var $dialog = $('<div id="redmine-dialog" title="Redmine Information"><p></p></div>');
+    
+
+    var sendToRedmine = function (ev) {
+
+        var $this = $(this);
+        var $parentTr = getTrFor($this);
+
+        data_obj = {
+            issue_id: $parentTr.find("td.TimeTrackerTicketNr div").text(),
+            hours: $parentTr.find("td.TimeTrackerSpend").text(),
+            comment: $parentTr.find("td.TimeTrackerComment div").text()
+        };
+
+        $.ajax({
+            type: 'POST',
+            url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/add_time_entry"),
+            data: JSON.stringify(data_obj),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            tr: $parentTr,
+            success: function(result){
+                    console.log($dialog)
+                    $dialog.html("<p>Time Entry was added successfully, please visit the following link and update the activity type.</p><a href='https://projects.modell-aachen.de/time_entries/"+result.id+"/edit' target='_blank'>https://projects.modell-aachen.de/time_entries/"+result.id+"/edit</a></p>")
+                    $dialog.dialog( "open" );
+                    this.tr.addClass('TimeTrackerBooked');
+                },
+            error: function(jqXHR, textStatus, errorThrown ){
+                    $dialog.html("<p>The was a problem sending the time tracker. Following message was provided: "+JSON.parse(jqXHR.responseText).msg+"</p> ")
+                    $dialog.dialog( "open" );
+                },
+        });
+
+    }
+
     var addTime = function($tr, correction) {
         var newSpend = new Number($tr.find('.TimeTrackerSpend').text());
         if(isNaN(newSpend)) newSpend = 0;
@@ -152,6 +187,8 @@ jQuery(function($){
         $tr.find('.TimeTrackerUnBook').click(markAsUnBooked);
         $tr.find('.TimeTrackerCorrection').click(correctActivity);
         $tr.find('.TimeTrackerResume').click(resumeActivity);
+        $tr.find('.TimeTrackerSend2R').click(sendToRedmine);
+
     };
 
     var sendToServer = function(ev) {
@@ -309,6 +346,17 @@ jQuery(function($){
         '</table>');
         $controlls.append($utilities);
 
+        $controlls.append($dialog);
+        $dialog.dialog({
+                autoOpen: false,
+                width: 550,
+                modal: true,
+                close: function() {
+                    
+                }
+            });
+
+
         var createAction = function(item) {
             var $action = $('<div class="TimeTrackerButton"></div>');
 
@@ -423,7 +471,14 @@ jQuery(function($){
             formatResult: formater,
             formatSelection: formater,
             id: "issue_id"
+        }).on("change", function(e) {
+            console.log ($controlls.find('.activityNotes'));
+            $controlls.find('input.activityNotes').val($(e.target).select2('data').subject)
         });
+
+        var sendToRedmineSuccess = function() {
+
+        }
 
 
         if($field.find('.TimeTrackerDate').text() !== getDate()) {
@@ -442,6 +497,7 @@ jQuery(function($){
         var $tools = $tr.find('.TimeTrackerTools');
         var $widget = $('<div class="TimeTrackerWidget"></div>');
         $widget.append('<div class="TimeTrackerButton TimeTrackerRename">Rename</div><div class="TimeTrackerButton TimeTrackerCorrection">Correction</div>');
+        $widget.append('<div class="TimeTrackerButton TimeTrackerSend2R">Send to Redmine</div>');
         $widget.append('<div class="TimeTrackerButton TimeTrackerBook">Book</div>');
         $widget.append('<div class="TimeTrackerButton TimeTrackerUnBook">Unbook</div>');
         $widget.appendTo($tools);
