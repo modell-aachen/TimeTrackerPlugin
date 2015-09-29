@@ -20,84 +20,181 @@ jQuery(function($){
         if ($.isEmptyObject(object)) {
             return
         }
-        
-        var string = object.subject;
-        var length = 60;
-        var trimmedString = string.length > length ? string.substring(0, length - 3) + "..." : string.substring(0, length);
-        object.ticket_verbose = object.tracker+" #"+object.issue_id+": "+trimmedString
-        return  object.ticket_verbose
+
+        if ('subject' in object) {
+            var string = object.subject;
+            var length = 60;
+            var trimmedString = string.length > length ? string.substring(0, length - 3) + "..." : string.substring(0, length);
+            return object.tracker+" #"+object.id+": "+trimmedString
+        } else {
+            return "@"+object.name;
+        }
     }
 
     var renameActivityHandler = function(ev){
         var $this = $(this);
         var $parentTr = getTrFor($this);
-        var $activity = $parentTr.find('.TimeTrackerComment > div.TimeTrackerValue');
+        var $project = $parentTr.find('.TimeTrackerProjectNr > div.TimeTrackerValue');
         var $ticket = $parentTr.find('.TimeTrackerTicketNr > div.TimeTrackerValue');
+        var $activity = $parentTr.find('.TimeTrackerActivityNr > div.TimeTrackerValue');
+        var $comment = $parentTr.find('.TimeTrackerComment > div.TimeTrackerValue');
         var $notes = $parentTr.find('.TimeTrackerNotes > div.TimeTrackerValue');
         var $tools = $parentTr.find('.TimeTrackerTools');
         $tools.hide();
+
         var submitHandler = function(ev) {
             var $this = $(this);
 
-            var $nameInput = $activity.siblings('input');
-            var name = $nameInput.val();
-            if(name === undefined) name = '';
-
             var $ticketInput = $ticket.siblings('input');
-            var ticket = $ticketInput.val();
-            if(ticket === undefined) ticket = '';
+            
+            var inputData = $ticketInput.select2('data');
+            var ticket = '';
+            var project = '';
+            
+            if (inputData != null) {
+                if ('subject' in inputData) {
+                    var ticket = inputData.id;
+                    var project = inputData.project_id;
+                } else {
+                    var project = inputData.id;
+                }
+            }
+
+
+            var $activityInput = $activity.siblings('select');
+            var activity = $activityInput.val();
+            if(activity === undefined) activity = '';
+
+            var $commentInput = $comment.siblings('input');
+            var name = $commentInput.val();
+            if(name === undefined) name = '';
 
             var $notesInput = $notes.siblings('input');
             var notes = $notesInput.val();
             if(notes === undefined) notes = '';
 
-            $nameInput.remove();
             $ticketInput.select2('destroy');
             $ticketInput.remove();
+            $activityInput.remove();
+            $commentInput.remove();
             $notesInput.remove();
             $renameUI.remove();
-
-            $activity.html(name);
+            
+            $project.html(project);
             $ticket.html(ticket);
+            $activity.html(activity);
+            $comment.html(name);
             $notes.html(notes);
 
             $parentTr.find('.TimeTrackerTools').show();
-            $activity.removeClass('TimeTrackerInRevision');
             $ticket.removeClass('TimeTrackerInRevision');
+            $activity.removeClass('TimeTrackerInRevision');
+            $comment.removeClass('TimeTrackerInRevision');
             $notes.removeClass('TimeTrackerInRevision');
         };
+        
 
-        var oldName = $activity.html();
-        $activity.parent().append($('<input class="TimeTrackerWidget" type="text" />').val(oldName));
-        $activity.addClass('TimeTrackerInRevision');
+        var oldProject = $project.html();
 
         var oldTicket = $ticket.html();
+        if (oldTicket == '' && oldProject != '') { oldTicket = '--' }
         var $input_ticket = $('<input class="TimeTrackerWidget" type="text" />').val(oldTicket);
         $ticket.parent().append($input_ticket);
         $input_ticket.select2({
             width: "150px",
             minimumInputLength: 3,
             ajax: {
-                url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_issue"),
+                url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
                 dataType: 'json',
                 delay: 250,
-                data: function (term) {return {q: term};},
+                data: function (term) {
+
+                    if (term.match("@")) {
+                        return {q: term.substring(1), type: "project"};
+                    } else {
+                        return {q: term, type: "issue"};
+                    }
+                },
                 results: function (data) { return { results: data }}
             },
             initSelection: function(element, callback) {
-                var id = $(element).val();
-                callback({issue_id: id, subject: '', tracker: ''})
+                var type;
+                var q;
+                if (oldTicket == '--') {
+                    type = 'project';
+                    q = oldProject;
+                } else {
+                    type = 'issue'
+                    q = oldTicket
+                }
+
+                $.ajax({
+                    type: 'GET',
+                    url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
+                    data: { q: q, type: type },
+                    success: function(result) {
+                        callback(result[0])
+                    }
+                });
+
             },
             formatResult: formater,
             formatSelection: formater,
-            id: "issue_id"
         }).on("change", function(e) {
-            console.log ($notes);
-            var $input = $notes.siblings('input')
-            $input.val($input.val() + " " + $(e.target).select2('data').subject);
-        });
+            var $project_id = $(e.target).select2('data').project_id;
+            $.ajax({
+                type: 'GET',
+                url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
+                data: { q: $project_id, type: "activity" },
+                success: function(result){
 
+                    var $select = $activity.parent().find('select');
+
+                    $select.empty()
+
+                    $.each(result,function(i,o){
+                        $select.append($('<option>', {
+                            value: o.id,
+                            text: o.name
+                        }));
+                    });
+                }
+            });
+        });
         $ticket.addClass('TimeTrackerInRevision');
+
+        var oldActivity = $activity.html();
+        $activity.parent().append($('<select class="TimeTrackerWidget" />').val(oldActivity));
+        $activity.addClass('TimeTrackerInRevision');
+        
+        if (oldProject != '') {
+            $.ajax({
+                type: 'GET',
+                url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
+                data: { q: oldProject, type: "activity" },
+                success: function(result){
+
+                    var $select = $activity.parent().find('select');
+
+                    $select.empty()
+
+                    $.each(result,function(i,o){
+                        $select.append($('<option>', {
+                            value: o.id,
+                            text: o.name
+                        }));
+                    });
+
+                    if (oldActivity) {
+                        $select.val(oldActivity);
+                    }
+                }
+            });
+        }
+
+        var oldName = $comment.html();
+        $comment.parent().append($('<input class="TimeTrackerWidget" type="text" />').val(oldName));
+        $comment.addClass('TimeTrackerInRevision');
 
         var oldNotes = $notes.html();
         $notes.parent().append($('<input class="TimeTrackerWidget" type="text" />').val(oldNotes));
@@ -163,7 +260,9 @@ jQuery(function($){
         var $parentTr = getTrFor($this);
 
         data_obj = {
+            project_id: $parentTr.find("td.TimeTrackerProjectNr div").text(),
             issue_id: $parentTr.find("td.TimeTrackerTicketNr div").text(),
+            activity_id: $parentTr.find("td.TimeTrackerActivityNr div").text(),
             hours: $parentTr.find("td.TimeTrackerSpend").text(),
             comment: $parentTr.find("td.TimeTrackerComment div").text()
         };
@@ -285,15 +384,18 @@ jQuery(function($){
          });
     }
 
-    var addActivity = function($table, ticket, comment, notes) {
+    var addActivity = function($table, project, ticket, activity, comment, notes) {
         if(!ticket) ticket = '';
         if(!comment) comment = '';
         if(!notes) notes = '';
+        if(!project) project = '';
+        if(!activity) activity = '';
 
         var $newTr = $('<!--\n--><tr>' +
             '<td><div class="TimeTrackerTools"></td>' +
+            '<td class="TimeTrackerProjectNr"><div class="TimeTrackerValue TimeTrackerResume">'+project+'</div></td>' +
             '<td class="TimeTrackerTicketNr"><div class="TimeTrackerValue TimeTrackerResume">'+ticket+'</div></td>' +
-            '<td class="TimeTrackerRedmineActivity"></td>' +
+            '<td class="TimeTrackerActivityNr"><div class="TimeTrackerValue TimeTrackerResume">'+activity+'</div></td>' +
             '<td class="TimeTrackerComment"><div class="TimeTrackerValue TimeTrackerResume">'+comment+'</div></td>' +
             '<td class="TimeTrackerNotes"><div class="TimeTrackerValue TimeTrackerResume">'+notes+'</div></td>' +
             '<td class="TimeTrackerTime"></td>' +
@@ -327,7 +429,7 @@ jQuery(function($){
             changeActivity($tr);
             $this.closest('.TimeTrackerField').find('div.TimeTrackerSend').click(); // save
         } else {
-            addActivity($table, ticket, comment, notes);
+            addActivity($table, null, ticket, null, comment, notes);
         }
     };
 
@@ -339,7 +441,7 @@ jQuery(function($){
         var comment = $this.attr('comment');
         var notes = $this.attr('notes');
 
-        addActivity($table, ticket, comment, notes);
+        addActivity($table, null, ticket, null, comment, notes);
     };
 
     var setupField = function(field) {
@@ -367,9 +469,12 @@ jQuery(function($){
                         '<div class="TimeTrackerNewActivity TimeTrackerButton">New Activity:</div>' +
                         '<div style="whitespace: no-break;" class="TimeTrackerInstantEnterDeluxe">' +
                             '<table>' +
-                                '<tr><td><label for="ticketNr">Ticket:</label></td><td><input type="text" name="ticketNr" class="ticketNr" /></td></tr><tr>' +
-                                '<td><label for="activityComment">Comment:</label></td><td><input type="text" name="activityComment" class="activityComment" /></td></tr>' +
-                                '<td><label for="activityNotes">Notes:</label></td><td><input type="text" name="activityNotes" class="activityNotes" /></td></tr>' +
+                                '<tr>'+
+                                '<td><label for="ticketNr">Ticket (or Project):</label></td><td><input type="text" name="ticketNr" class="ticketNr" /></td></tr><tr>'+
+                                '<td><label for="activityNr">Activity:</label></td><td><select name="activityNr" class="activityNr" /></td></tr><tr>'+
+                                '<td><label for="activityComment">Comment:</label></td><td><input type="text" name="activityComment" class="activityComment" /></td></tr>'+
+                                '<td><label for="activityNotes">Notes:</label></td><td><input type="text" name="activityNotes" class="activityNotes" /></td>'+
+                                '</tr>' +
                             '</table>' +
                         '</div>' +
                     '</td>' +
@@ -466,45 +571,82 @@ jQuery(function($){
             var $this = $(this);
             var $table = $this.closest('.TimeTrackerField').find('.TimeTrackerTable tbody');
             var $tr = getTrFor($this);
-
-            var $inputActivity = $tr.find('input.activityComment');
-            var name = $inputActivity.val();
-            $inputActivity.val('');
-
+            
+            var $project_id = "";
+            var $issue_id = "";
             var $inputTicket = $tr.find('input.ticketNr');
-            var ticket = $inputTicket.val();
+            var $ticket_data = $inputTicket.select2('data');
+            
+            if ($ticket_data != null) {
+                if ('subject' in $ticket_data) {
+                    $project_id = $ticket_data.project_id;
+                    $issue_id = $ticket_data.id;
+                } else {
+                    $project_id = $ticket_data.id;
+                }   
+            }
+
             $inputTicket.val('');
             $inputTicket.select2('data', {});
+            
+            var $selectActivity = $tr.find('select.activityNr');
+            var $activity = $selectActivity.val();
+            $selectActivity.val('');
+            $selectActivity.empty();
+
+            var $inputComment = $tr.find('input.activityComment');
+            var name = $inputComment.val();
+            $inputComment.val('');
 
             var $inputNotes = $tr.find('input.activityNotes');
             var notes = $inputNotes.val();
             $inputNotes.val('');
 
-            addActivity($table, ticket, name, notes);
+            addActivity($table, $project_id, $issue_id, $activity, name, notes);
         });
 
 
         $controlls.find("input.ticketNr").select2({
-            width: "150px",
+            width: "300px",
             minimumInputLength: 3,
             ajax: {
-                url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_issue"),
+                url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
                 dataType: 'json',
                 delay: 250,
-                data: function (term) {return {q: term};},
+                data: function (term) {
+
+                    if (term.match("@")) {
+                        return {q: term.substring(1), type: "project"};
+                    } else {
+                        return {q: term, type: "issue"};
+                    }
+                },
                 results: function (data) { return { results: data }}
             },
             formatResult: formater,
-            formatSelection: formater,
-            id: "issue_id"
+            formatSelection: formater
         }).on("change", function(e) {
-            console.log ($controlls.find('.activityNotes'));
-            $controlls.find('input.activityNotes').val($(e.target).select2('data').subject)
+            var $project_id = $(e.target).select2('data').project_id;
+            $.ajax({
+                type: 'GET',
+                url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
+                data: { q: $project_id, type: "activity" },
+                success: function(result){
+                    var $select = $controlls.find("select.activityNr");
+
+                    $select.empty()
+
+                    $.each(result,function(i,o){
+                        $select.append($('<option>', {
+                            value: o.id,
+                            text: o.name
+                        }));
+                    });
+                }
+            });
         });
 
-        var sendToRedmineSuccess = function() {
 
-        }
 
 
         if($field.find('.TimeTrackerDate').text() !== getDate()) {
