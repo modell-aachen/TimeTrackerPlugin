@@ -414,6 +414,8 @@ jQuery(function($){
         var ticket = $this.attr('ticket');
         var comment = $this.attr('comment');
         var notes = $this.attr('notes');
+        var project = $this.attr('project');
+        var activity = $this.attr('activity');
 
         var $tr;
         $table.find('tr').each(function() {
@@ -429,7 +431,7 @@ jQuery(function($){
             changeActivity($tr);
             $this.closest('.TimeTrackerField').find('div.TimeTrackerSend').click(); // save
         } else {
-            addActivity($table, null, ticket, null, comment, notes);
+            addActivity($table, project, ticket, activity, comment, notes);
         }
     };
 
@@ -440,8 +442,10 @@ jQuery(function($){
         var ticket = $this.attr('ticket');
         var comment = $this.attr('comment');
         var notes = $this.attr('notes');
+        var project = $this.attr('project');
+        var activity = $this.attr('activity');
 
-        addActivity($table, null, ticket, null, comment, notes);
+        addActivity($table, project, ticket, activity, comment, notes);
     };
 
     var setupField = function(field) {
@@ -503,8 +507,12 @@ jQuery(function($){
         var createAction = function(item) {
             var $action = $('<div class="TimeTrackerButton"></div>');
 
+            var project = item.project;
+
             var ticket = item.ticket;
             if(!ticket || !ticket.length) ticket = '';
+
+            var activity = item.activity;
 
             var comment = item.comment;
             if(!comment || !comment.length) comment = '';
@@ -518,7 +526,9 @@ jQuery(function($){
             if(!label.length) label = '(unknown)';
 
             var title = '';
-            if(ticket) title = 'Ticket: ' + ticket;
+            if(project) title += (title ? ' ' : '') + 'Project: ' + project;
+            if(ticket) title += (title ? ' ' : '') + 'Ticket: ' + ticket;
+            if(activity) title += (title ? ' ' : '') + 'Activity: ' + activity;
             if(comment) title += (title ? ' ' : '') + 'Comment: ' + comment;
             if(notes) title += (title ? ' ' : '') + 'Notes: ' + notes;
 
@@ -527,6 +537,8 @@ jQuery(function($){
             $action.attr('ticket', ticket);
             $action.attr('comment', comment);
             $action.attr('notes', notes);
+            if(activity) $action.attr('activity', activity);
+            if(project) $action.attr('project', project);
 
             return $action;
         };
