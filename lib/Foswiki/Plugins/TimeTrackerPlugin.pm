@@ -107,7 +107,9 @@ sub _timetrackerjsTAG {
     my $css = css();
     my $js = js();
 
-    Foswiki::Func::addToZone("script", "TimeTrackerPlugin", <<SCRIPT, "JQUERYPLUGIN");
+    Foswiki::Plugins::JQueryPlugin::Plugins::createPlugin("select2");
+
+    Foswiki::Func::addToZone("script", "TimeTrackerPlugin", <<SCRIPT, "JQUERYPLUGIN,JQUERYPLUGIN::SELECT2");
 $css$js
 SCRIPT
 
