@@ -637,7 +637,16 @@ jQuery(function($){
             templateSelection: formater,
             templateResult: formater
         }).on("change", function(e) {
-            var $project_id = $(e.target).select2('data').project_id;
+
+            var select = $(e.target).select2('data');
+            var $project_id;
+
+            if ('subject' in select) {
+                $project_id = select.project_id;
+            } else {
+                $project_id = select.id;
+            }
+
             $.ajax({
                 type: 'GET',
                 url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
