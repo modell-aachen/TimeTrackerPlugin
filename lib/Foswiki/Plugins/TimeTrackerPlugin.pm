@@ -51,7 +51,7 @@ sub initPlugin {
 
     Foswiki::Func::registerTagHandler( 'TIMETRACKER', \&_timetrackerTAG );
     Foswiki::Func::registerTagHandler( 'TIMETRACKERJS', \&_timetrackerjsTAG );
-    Foswiki::Func::registerRESTHandler( 'store', \&restStore, authenticate => 1, http_allow => 'POST', validate => 1 );
+    Foswiki::Func::registerRESTHandler( 'store', \&restStore, authenticate => 1, http_allow => 'POST', validate => 0 );
 
     # Plugin correctly initialized
     return 1;
