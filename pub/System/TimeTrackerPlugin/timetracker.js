@@ -45,12 +45,12 @@ jQuery(function($){
         var submitHandler = function(ev) {
             var $this = $(this);
 
-            var $ticketInput = $ticket.siblings('input');
-            
+            var $ticketInput = $ticket.siblings('select');
+
             var inputData = $ticketInput.select2('data');
             var ticket = '';
             var project = '';
-            
+
             if (inputData != null) {
                 if ('subject' in inputData) {
                     var ticket = inputData.id;
@@ -79,7 +79,7 @@ jQuery(function($){
             $commentInput.remove();
             $notesInput.remove();
             $renameUI.remove();
-            
+
             $project.html(project);
             $ticket.html(ticket);
             $activity.html(activity);
@@ -92,13 +92,13 @@ jQuery(function($){
             $comment.removeClass('TimeTrackerInRevision');
             $notes.removeClass('TimeTrackerInRevision');
         };
-        
+
 
         var oldProject = $project.html();
 
         var oldTicket = $ticket.html();
         if (oldTicket == '' && oldProject != '') { oldTicket = '--' }
-        var $input_ticket = $('<input class="TimeTrackerWidget" type="text" />').val(oldTicket);
+        var $input_ticket = $('<select class="TimeTrackerWidget" />').val(oldTicket);
         $ticket.parent().append($input_ticket);
         $input_ticket.select2({
             width: "150px",
@@ -108,7 +108,6 @@ jQuery(function($){
                 dataType: 'json',
                 delay: 250,
                 data: function (term) {
-
                     if (term.match("@")) {
                         return {q: term.substring(1), type: "project"};
                     } else {
@@ -117,27 +116,27 @@ jQuery(function($){
                 },
                 results: function (data) { return { results: data }}
             },
-            initSelection: function(element, callback) {
-                var type;
-                var q;
-                if (oldTicket == '--') {
-                    type = 'project';
-                    q = oldProject;
-                } else {
-                    type = 'issue'
-                    q = oldTicket
-                }
+           //  initSelection: function(element, callback) {
+           //      var type;
+           //      var q;
+           //      if (oldTicket == '--') {
+           //          type = 'project';
+           //          q = oldProject;
+           //      } else {
+           //          type = 'issue'
+           //          q = oldTicket
+           //      }
 
-                $.ajax({
-                    type: 'GET',
-                    url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
-                    data: { q: q, type: type },
-                    success: function(result) {
-                        callback(result[0])
-                    }
-                });
+           //      $.ajax({
+           //          type: 'GET',
+           //          url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
+           //          data: { q: q, type: type },
+           //          success: function(result) {
+           //              callback(result[0])
+           //          }
+           //      });
 
-            },
+           //  },
             formatResult: formater,
             formatSelection: formater,
         }).on("change", function(e) {
@@ -166,7 +165,7 @@ jQuery(function($){
         var oldActivity = $activity.html();
         $activity.parent().append($('<select class="TimeTrackerWidget" />').val(oldActivity));
         $activity.addClass('TimeTrackerInRevision');
-        
+
         if (oldProject != '') {
             $.ajax({
                 type: 'GET',
@@ -252,7 +251,7 @@ jQuery(function($){
     };
 
     var $dialog = $('<div id="redmine-dialog" title="Redmine Information"><p></p></div>');
-    
+
 
     var sendToRedmine = function (ev) {
 
@@ -474,7 +473,7 @@ jQuery(function($){
                         '<div style="whitespace: no-break;" class="TimeTrackerInstantEnterDeluxe">' +
                             '<table>' +
                                 '<tr>'+
-                                '<td><label for="ticketNr">Ticket (or Project):</label></td><td><input type="text" name="ticketNr" class="ticketNr" /></td></tr><tr>'+
+                                '<td><label for="ticketNr">Ticket (or Project):</label></td><td><select name="ticketNr" class="ticketNr" /></td></tr><tr>'+
                                 '<td><label for="activityNr">Activity:</label></td><td><select name="activityNr" class="activityNr" /></td></tr><tr>'+
                                 '<td><label for="activityComment">Comment:</label></td><td><input type="text" name="activityComment" class="activityComment" /></td></tr>'+
                                 '<td><label for="activityNotes">Notes:</label></td><td><input type="text" name="activityNotes" class="activityNotes" /></td>'+
@@ -583,24 +582,24 @@ jQuery(function($){
             var $this = $(this);
             var $table = $this.closest('.TimeTrackerField').find('.TimeTrackerTable tbody');
             var $tr = getTrFor($this);
-            
+
             var $project_id = "";
             var $issue_id = "";
-            var $inputTicket = $tr.find('input.ticketNr');
+            var $inputTicket = $tr.find('select.ticketNr');
             var $ticket_data = $inputTicket.select2('data');
-            
+
             if ($ticket_data != null) {
                 if ('subject' in $ticket_data) {
                     $project_id = $ticket_data.project_id;
                     $issue_id = $ticket_data.id;
                 } else {
                     $project_id = $ticket_data.id;
-                }   
+                }
             }
 
             $inputTicket.val('');
             $inputTicket.select2('data', {});
-            
+
             var $selectActivity = $tr.find('select.activityNr');
             var $activity = $selectActivity.val();
             $selectActivity.val('');
@@ -618,7 +617,7 @@ jQuery(function($){
         });
 
 
-        $controlls.find("input.ticketNr").select2({
+        $controlls.find("select.ticketNr").select2({
             width: "300px",
             minimumInputLength: 3,
             ajax: {
@@ -626,17 +625,17 @@ jQuery(function($){
                 dataType: 'json',
                 delay: 250,
                 data: function (term) {
-
+                    term = term.term
                     if (term.match("@")) {
                         return {q: term.substring(1), type: "project"};
                     } else {
                         return {q: term, type: "issue"};
                     }
                 },
-                results: function (data) { return { results: data }}
+                processResults: function (data) { console.log(data);return { results: data }}
             },
-            formatResult: formater,
-            formatSelection: formater
+            templateSelection: formater,
+            templateResult: formater
         }).on("change", function(e) {
             var $project_id = $(e.target).select2('data').project_id;
             $.ajax({
