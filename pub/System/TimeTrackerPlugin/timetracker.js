@@ -31,6 +31,56 @@ jQuery(function($){
         }
     }
 
+    var splitActivityHandler = function(ev) {
+        var $this = $(this);
+        var $parentTr = getTrFor($this);
+        var project = $parentTr.find('.TimeTrackerProjectNr > div.TimeTrackerValue').text();
+        var ticket = $parentTr.find('.TimeTrackerTicketNr > div.TimeTrackerValue').text();
+        var activity = $parentTr.find('.TimeTrackerActivityNr > div.TimeTrackerValue').text();
+        var comment = $parentTr.find('.TimeTrackerComment > div.TimeTrackerValue').text();
+
+        var $dialog = $('<div><input type="text" name="time" /><select name="unit"><option selected="selected">m</option><option>h</option></select></div>');
+        $dialog.dialog({
+            title: 'How much time would you like to split?',
+            buttons: [
+                {
+                    text: "Split it!",
+                    icons: { primary: "ui-icon-circle-check" },
+                    click: function() {
+                        var $newTr = addActivity(undefined, project, ticket, activity, comment, '');
+                        $parentTr.after($newTr);
+
+                        var val = $dialog.find('input[name="time"]').val();
+                        if(val !== '' && isNaN(val)) {
+                            alert('Please check your input');
+                            return false;
+                        }
+                        if(val !== '' && !isNaN(val)) {
+                            var correction = val;
+                            if($dialog.find('[name=unit]').val() === 'm') {
+                                correction /= 60;
+                            }
+
+                            addTime($parentTr, -correction);
+                            $parentTr.find('.TimeTrackerTime').append('split: ' + (-correction) + '<br />');
+
+                            addTime($newTr, correction);
+                            $newTr.find('.TimeTrackerTime').append('split: ' + correction + '<br />');
+                        }
+                        $dialog.dialog('close');
+                    }
+                },
+                {
+                    text: "Cancel",
+                    icons: { primary: "ui-icon-cancel" },
+                    click: function() { $dialog.dialog('close'); }
+                }
+            ]
+        });
+
+        return false;
+    }
+
     var renameActivityHandler = function(ev){
         var $this = $(this);
         var $parentTr = getTrFor($this);
@@ -324,7 +374,7 @@ jQuery(function($){
         $tr.find('.TimeTrackerCorrection').click(correctActivity);
         $tr.find('.TimeTrackerResume').click(resumeActivity);
         $tr.find('.TimeTrackerSend2R').click(sendToRedmine);
-
+        $tr.find('.TimeTrackerSplit').click(splitActivityHandler);
     };
 
     var sendToServer = function(ev) {
@@ -400,10 +450,13 @@ jQuery(function($){
             '<td class="TimeTrackerTime"></td>' +
             '<td class="TimeTrackerSpend"></td>' +
         '</tr><!--\n-->'); // the \n is for rcs
-        $table.append( $newTr );
         toolsify($newTr);
-        changeActivity($newTr);
-        $table.closest('.TimeTrackerField').find('div.TimeTrackerSend').click(); // save
+        if($table) {
+            $table.append($newTr);
+            changeActivity($newTr);
+            $table.closest('.TimeTrackerField').find('div.TimeTrackerSend').click(); // save
+        }
+        return $newTr;
     }
 
     var resumeQuickAction = function(ev) {
@@ -688,6 +741,7 @@ jQuery(function($){
         $widget.append('<div class="TimeTrackerButton TimeTrackerSend2R">Send to Redmine</div>');
         $widget.append('<div class="TimeTrackerButton TimeTrackerBook">Book</div>');
         $widget.append('<div class="TimeTrackerButton TimeTrackerUnBook">Unbook</div>');
+        $widget.append('<div class="TimeTrackerButton TimeTrackerSplit">Split</div>');
         $widget.appendTo($tools);
         makeClickable($tr);
     }
