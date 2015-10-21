@@ -315,6 +315,10 @@ jQuery(function($){
             hours: $parentTr.find("td.TimeTrackerSpend").text(),
             comment: $parentTr.find("td.TimeTrackerComment div").text()
         };
+        var $field = $parentTr.closest('.TimeTrackerField');
+        if($field.find('.TimeTrackerDate').text() !== getDate()) {
+            data_obj.date = $field.find('.TimeTrackerDate').text();
+        }
 
         $.ajax({
             type: 'POST',
