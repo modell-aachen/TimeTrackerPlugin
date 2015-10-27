@@ -653,7 +653,7 @@ jQuery(function($){
                 }
             }
 
-            $inputTicket.val('');
+            $inputTicket.select2('val', null);
             $inputTicket.select2('data', {});
 
             var $selectActivity = $tr.find('select.activityNr');
@@ -694,6 +694,12 @@ jQuery(function($){
             templateResult: formater
         }).on("change", function(e) {
 
+            $controlls.find("select.activityNr").empty();
+
+            if ( $('.ticketNr').select2('val') == null) {
+                return
+            }
+
             var select = $(e.target).select2('data')[0];
             var $project_id;
 
@@ -709,8 +715,6 @@ jQuery(function($){
                 data: { q: $project_id, type: "activity" },
                 success: function(result){
                     var $select = $controlls.find("select.activityNr");
-
-                    $select.empty()
 
                     $.each(result,function(i,o){
                         $select.append($('<option>', {
