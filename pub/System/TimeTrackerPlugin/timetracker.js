@@ -328,7 +328,6 @@ jQuery(function($){
             dataType: "json",
             tr: $parentTr,
             success: function(result){
-                    console.log($dialog)
                     $dialog.html("<p>Time Entry was added successfully, please visit the following link and update the activity type.</p><a href='https://projects.modell-aachen.de/time_entries/"+result.id+"/edit' target='_blank'>https://projects.modell-aachen.de/time_entries/"+result.id+"/edit</a></p>")
                     $dialog.dialog( "open" );
                     this.tr.addClass('TimeTrackerBooked');
@@ -643,7 +642,7 @@ jQuery(function($){
             var $project_id = "";
             var $issue_id = "";
             var $inputTicket = $tr.find('select.ticketNr');
-            var $ticket_data = $inputTicket.select2('data');
+            var $ticket_data = $inputTicket.select2('data')[0];
 
             if ($ticket_data != null) {
                 if ('subject' in $ticket_data) {
@@ -689,13 +688,13 @@ jQuery(function($){
                         return {q: term, type: "issue"};
                     }
                 },
-                processResults: function (data) { console.log(data);return { results: data }}
+                processResults: function (data) {return { results: data }}
             },
             templateSelection: formater,
             templateResult: formater
         }).on("change", function(e) {
 
-            var select = $(e.target).select2('data');
+            var select = $(e.target).select2('data')[0];
             var $project_id;
 
             if ('subject' in select) {
