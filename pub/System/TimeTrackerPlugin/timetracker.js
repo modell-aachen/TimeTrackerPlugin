@@ -19,6 +19,10 @@ jQuery(function($){
 
         if ($.isEmptyObject(object)) {
             return
+        } 
+
+        if (object.loading) {
+            return object.text
         }
 
         if ('subject' in object) {
@@ -96,8 +100,9 @@ jQuery(function($){
             var $this = $(this);
 
             var $ticketInput = $ticket.siblings('select');
+            var inputData = $ticketInput.select2('data')[0];
 
-            var inputData = $ticketInput.select2('data');
+
             var ticket = '';
             var project = '';
 
@@ -147,7 +152,6 @@ jQuery(function($){
         var oldProject = $project.html();
 
         var oldTicket = $ticket.html();
-        if (oldTicket == '' && oldProject != '') { oldTicket = '--' }
         var $input_ticket = $('<select class="TimeTrackerWidget" />').val(oldTicket);
         $ticket.parent().append($input_ticket);
         $input_ticket.select2({
@@ -158,39 +162,66 @@ jQuery(function($){
                 dataType: 'json',
                 delay: 250,
                 data: function (term) {
+                    term = term.term
                     if (term.match("@")) {
                         return {q: term.substring(1), type: "project"};
                     } else {
                         return {q: term, type: "issue"};
                     }
                 },
-                results: function (data) { return { results: data }}
+                processResults: function (data) {return { results: data }}
             },
-           //  initSelection: function(element, callback) {
-           //      var type;
-           //      var q;
-           //      if (oldTicket == '--') {
-           //          type = 'project';
-           //          q = oldProject;
-           //      } else {
-           //          type = 'issue'
-           //          q = oldTicket
-           //      }
+             initSelection: function(element, callback) {
+                 var type;
+                 var q;
 
-           //      $.ajax({
-           //          type: 'GET',
-           //          url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
-           //          data: { q: q, type: type },
-           //          success: function(result) {
-           //              callback(result[0])
-           //          }
-           //      });
+                 if (oldTicket == '' && oldProject == '') {
+                    console.info("Select2: initSelection: No Project and Issue")
+                    callback({})
+                 }
 
-           //  },
-            formatResult: formater,
-            formatSelection: formater,
+                 if (oldTicket == '' && oldProject != '') {
+                    console.info("Select2: initSelection: Select Project")
+                    type = 'project';
+                    q = oldProject;
+                 }
+
+                 if (oldTicket != '' && oldProject != '') {
+                    console.info("Select2: initSelection: Select Issue")
+                    type = 'issue'
+                    q = oldTicket
+                 }
+
+
+                 $.ajax({
+                     type: 'GET',
+                     url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
+                     data: { q: q, type: type },
+                     success: function(result) {
+                        console.log(result[0])
+                        callback(result)
+                     }
+                 });
+
+             },
+            templateResult: formater,
+            templateSelection: formater,
         }).on("change", function(e) {
-            var $project_id = $(e.target).select2('data').project_id;
+
+            if ( $(e.target).select2('val') == null) {
+                return
+            }
+
+            var select = $(e.target).select2('data')[0];
+            var $project_id;
+
+            if ('subject' in select) {
+                $project_id = select.project_id;
+            } else {
+                $project_id = select.id;
+            }
+
+
             $.ajax({
                 type: 'GET',
                 url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
@@ -216,30 +247,30 @@ jQuery(function($){
         $activity.parent().append($('<select class="TimeTrackerWidget" />').val(oldActivity));
         $activity.addClass('TimeTrackerInRevision');
 
-        if (oldProject != '') {
-            $.ajax({
-                type: 'GET',
-                url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
-                data: { q: oldProject, type: "activity" },
-                success: function(result){
+        // if (oldProject != '') {
+        //     $.ajax({
+        //         type: 'GET',
+        //         url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
+        //         data: { q: oldProject, type: "activity" },
+        //         success: function(result){
 
-                    var $select = $activity.parent().find('select');
+        //             var $select = $activity.parent().find('select');
 
-                    $select.empty()
+        //             $select.empty()
 
-                    $.each(result,function(i,o){
-                        $select.append($('<option>', {
-                            value: o.id,
-                            text: o.name
-                        }));
-                    });
+        //             $.each(result,function(i,o){
+        //                 $select.append($('<option>', {
+        //                     value: o.id,
+        //                     text: o.name
+        //                 }));
+        //             });
 
-                    if (oldActivity) {
-                        $select.val(oldActivity);
-                    }
-                }
-            });
-        }
+        //             if (oldActivity) {
+        //                 $select.val(oldActivity);
+        //             }
+        //         }
+        //     });
+        // }
 
         var oldName = $comment.html();
         $comment.parent().append($('<input class="TimeTrackerWidget" type="text" />').val(oldName));
@@ -653,13 +684,13 @@ jQuery(function($){
                 }
             }
 
-            $inputTicket.select2('val', null);
-            $inputTicket.select2('data', {});
-
             var $selectActivity = $tr.find('select.activityNr');
             var $activity = $selectActivity.val();
             $selectActivity.val('');
             $selectActivity.empty();
+
+            $inputTicket.select2('val', null);
+            $inputTicket.select2('data', {});
 
             var $inputComment = $tr.find('input.activityComment');
             var name = $inputComment.val();
