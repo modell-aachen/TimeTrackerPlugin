@@ -35,6 +35,66 @@ jQuery(function($){
         }
     }
 
+    var fillActivitySelect = function(element, entries, selection) {
+        element.empty()
+        $.each(entries,function(i,o){
+            element.append($('<option>', {
+                value: o.id,
+                text: o.name
+            }));
+        });
+
+        if (selection) {
+            element.val(selection);
+        }
+    }
+
+    var updateActivitySelect = function(e, selectElement) {
+
+        selectElement.empty();
+
+        if ( $(e.target).select2('val') == null) {
+            return
+        }
+
+        var select = $(e.target).select2('data')[0];
+        var $project_id;
+
+        var select = $(e.target).select2('data')[0];
+        var $project_id;
+
+        if ('subject' in select) {
+            $project_id = select.project_id;
+        } else {
+            $project_id = select.id;
+        }
+
+        $.ajax({
+            type: 'GET',
+            url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
+            data: { q: $project_id, type: "activity" },
+            success: function(result){
+                fillActivitySelect(selectElement, result, null)
+            }
+        });
+
+    }
+
+    var select2AjaxRequest = {
+        url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
+        dataType: 'json',
+        delay: 250,
+        data: function (term) {
+            term = term.term
+            if (term.match("@")) {
+                return {q: term.substring(1), type: "project"};
+            } else {
+                return {q: term, type: "issue"};
+            }
+        },
+        processResults: function (data) {return { results: data }}
+    }
+
     var splitActivityHandler = function(ev) {
         var $this = $(this);
         var $parentTr = getTrFor($this);
@@ -96,15 +156,18 @@ jQuery(function($){
         var $tools = $parentTr.find('.TimeTrackerTools');
         $tools.hide();
 
+        var oldProject = $project.html();
+        var oldTicket = $ticket.html();
+        var oldActivity = $activity.html();
+
         var submitHandler = function(ev) {
             var $this = $(this);
 
             var $ticketInput = $ticket.siblings('select');
             var inputData = $ticketInput.select2('data')[0];
 
-
-            var ticket = '';
-            var project = '';
+            var ticket = oldTicket;
+            var project = oldProject;
 
             if (inputData != null) {
                 if ('subject' in inputData) {
@@ -114,7 +177,6 @@ jQuery(function($){
                     var project = inputData.id;
                 }
             }
-
 
             var $activityInput = $activity.siblings('select');
             var activity = $activityInput.val();
@@ -148,129 +210,80 @@ jQuery(function($){
             $notes.removeClass('TimeTrackerInRevision');
         };
 
+        var type;
+        var q;
+        var empty = false; 
+        var select2_data;
 
-        var oldProject = $project.html();
 
-        var oldTicket = $ticket.html();
-        var $input_ticket = $('<select class="TimeTrackerWidget" />').val(oldTicket);
-        $ticket.parent().append($input_ticket);
-        $input_ticket.select2({
-            width: "150px",
-            minimumInputLength: 3,
-            ajax: {
-                url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
-                dataType: 'json',
-                delay: 250,
-                data: function (term) {
-                    term = term.term
-                    if (term.match("@")) {
-                        return {q: term.substring(1), type: "project"};
+        if (oldTicket == '' && oldProject == '') {
+            console.info("Select2: initSelection: No Project and Issue")
+            empty = true; 
+        }
+
+        if (oldTicket == '' && oldProject != '') {
+            console.info("Select2: initSelection: Select Project")
+            type = 'project';
+            q = oldProject;
+        }
+
+        if (oldTicket != '' && oldProject != '') {
+            console.info("Select2: initSelection: Select Issue")
+            type = 'issue'
+            q = oldTicket
+        }
+
+       var issueProjectRest = function() {
+            if (!empty) {
+                return $.ajax({
+                    type: 'GET',
+                    url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
+                    data: { q: q, type: type },
+                });
+            } else { return null; }
+        }
+
+        var activityRest = function() {
+            if (!empty) {
+                return $.ajax({
+                    type: 'GET',
+                    url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
+                    data: { q: oldProject, type: "activity" },
+                });
+            } else { return null; }
+        }
+
+        $.when(issueProjectRest(), activityRest()).done(function(a1, a2){
+
+            $activity.parent().append($('<select class="TimeTrackerWidget" />').val(oldActivity));
+            $activity.addClass('TimeTrackerInRevision');
+            var $activitySelect = $activity.parent().find('select');
+
+            if (!empty) {
+                fillActivitySelect($activitySelect, a2[0], oldActivity);
+            }
+
+            var $input_ticket = $('<select class="TimeTrackerWidget" />');
+            $ticket.addClass('TimeTrackerInRevision');
+            $ticket.parent().append($input_ticket);
+            $input_ticket.select2({
+                width: "150px",
+                minimumInputLength: 3,
+                ajax: select2AjaxRequest,
+                
+                initSelection: function(element, callback) {
+                    if (a1) {
+                        console.log(a1[0][0])
+                        callback(a1[0][0]);
                     } else {
-                        return {q: term, type: "issue"};
+                        callback({});
                     }
                 },
-                processResults: function (data) {return { results: data }}
-            },
-             initSelection: function(element, callback) {
-                 var type;
-                 var q;
-
-                 if (oldTicket == '' && oldProject == '') {
-                    console.info("Select2: initSelection: No Project and Issue")
-                    callback({})
-                 }
-
-                 if (oldTicket == '' && oldProject != '') {
-                    console.info("Select2: initSelection: Select Project")
-                    type = 'project';
-                    q = oldProject;
-                 }
-
-                 if (oldTicket != '' && oldProject != '') {
-                    console.info("Select2: initSelection: Select Issue")
-                    type = 'issue'
-                    q = oldTicket
-                 }
-
-
-                 $.ajax({
-                     type: 'GET',
-                     url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
-                     data: { q: q, type: type },
-                     success: function(result) {
-                        console.log(result[0])
-                        callback(result)
-                     }
-                 });
-
-             },
-            templateResult: formater,
-            templateSelection: formater,
-        }).on("change", function(e) {
-
-            if ( $(e.target).select2('val') == null) {
-                return
-            }
-
-            var select = $(e.target).select2('data')[0];
-            var $project_id;
-
-            if ('subject' in select) {
-                $project_id = select.project_id;
-            } else {
-                $project_id = select.id;
-            }
-
-
-            $.ajax({
-                type: 'GET',
-                url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
-                data: { q: $project_id, type: "activity" },
-                success: function(result){
-
-                    var $select = $activity.parent().find('select');
-
-                    $select.empty()
-
-                    $.each(result,function(i,o){
-                        $select.append($('<option>', {
-                            value: o.id,
-                            text: o.name
-                        }));
-                    });
-                }
-            });
+                templateResult: formater,
+                templateSelection: formater,
+            }).on("change", function(e){updateActivitySelect(e, $activitySelect)});
         });
-        $ticket.addClass('TimeTrackerInRevision');
 
-        var oldActivity = $activity.html();
-        $activity.parent().append($('<select class="TimeTrackerWidget" />').val(oldActivity));
-        $activity.addClass('TimeTrackerInRevision');
-
-        // if (oldProject != '') {
-        //     $.ajax({
-        //         type: 'GET',
-        //         url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
-        //         data: { q: oldProject, type: "activity" },
-        //         success: function(result){
-
-        //             var $select = $activity.parent().find('select');
-
-        //             $select.empty()
-
-        //             $.each(result,function(i,o){
-        //                 $select.append($('<option>', {
-        //                     value: o.id,
-        //                     text: o.name
-        //                 }));
-        //             });
-
-        //             if (oldActivity) {
-        //                 $select.val(oldActivity);
-        //             }
-        //         }
-        //     });
-        // }
 
         var oldName = $comment.html();
         $comment.parent().append($('<input class="TimeTrackerWidget" type="text" />').val(oldName));
@@ -707,57 +720,12 @@ jQuery(function($){
         $controlls.find("select.ticketNr").select2({
             width: "300px",
             minimumInputLength: 3,
-            ajax: {
-                url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
-                dataType: 'json',
-                delay: 250,
-                data: function (term) {
-                    term = term.term
-                    if (term.match("@")) {
-                        return {q: term.substring(1), type: "project"};
-                    } else {
-                        return {q: term, type: "issue"};
-                    }
-                },
-                processResults: function (data) {return { results: data }}
-            },
+            ajax: select2AjaxRequest,
             templateSelection: formater,
             templateResult: formater
         }).on("change", function(e) {
-
-            $controlls.find("select.activityNr").empty();
-
-            if ( $('.ticketNr').select2('val') == null) {
-                return
-            }
-
-            var select = $(e.target).select2('data')[0];
-            var $project_id;
-
-            if ('subject' in select) {
-                $project_id = select.project_id;
-            } else {
-                $project_id = select.id;
-            }
-
-            $.ajax({
-                type: 'GET',
-                url: (foswiki.preferences.SCRIPTURL+"/rest/RedmineIntegrationPlugin/search_redmine"),
-                data: { q: $project_id, type: "activity" },
-                success: function(result){
-                    var $select = $controlls.find("select.activityNr");
-
-                    $.each(result,function(i,o){
-                        $select.append($('<option>', {
-                            value: o.id,
-                            text: o.name
-                        }));
-                    });
-                }
-            });
+            updateActivitySelect(e, $controlls.find("select.activityNr"))
         });
-
-
 
 
         if($field.find('.TimeTrackerDate').text() !== getDate()) {
