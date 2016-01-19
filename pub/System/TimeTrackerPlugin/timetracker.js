@@ -53,8 +53,8 @@ jQuery(function($){
 
         selectElement.empty();
 
-        if ( $(e.target).select2('val') == null) {
-            return
+        if (!$(e.target).val()) {
+            return;
         }
 
         var select = $(e.target).select2('data')[0];
