@@ -1,3 +1,6 @@
+
+
+/*
 jQuery(function($){
     var current;
     var currentTime;
@@ -225,3 +228,4 @@ var $controlls = $('<table class="TimeTrackerControlls" rules="all">    <tbody> 
 
     setup();
 });
+*/

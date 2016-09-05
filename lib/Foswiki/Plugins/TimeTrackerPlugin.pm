@@ -49,110 +49,18 @@ sub initPlugin {
         return 0;
     }
 
-    Foswiki::Func::registerTagHandler( 'TIMETRACKER', \&_timetrackerTAG );
-    Foswiki::Func::registerTagHandler( 'TIMETRACKERJS', \&_timetrackerjsTAG );
-    Foswiki::Func::registerRESTHandler( 'store', \&restStore );
+    my $script = <<SCRIPT;
+    <script type="text/javascript" src="%PUBURL%/System/TimeTrackerPlugin/timetracker.js"></script>
+SCRIPT
 
-    # Plugin correctly initialized
+    my $style = <<STYLE;
+<link rel="stylesheet" href="%PUBURL%/System/TimeTrackerPlugin/timetracker.css" />
+STYLE
+
+    Foswiki::Func::addToZone('head', 'TIMETRACKER::CSS', $style);
+    Foswiki::Func::addToZone('script', 'TIMETRACKER::JS', $script, 'JQUERYPLUGIN::FOSWIKI::PREFERENCES,VUEJSPLUGIN');
+
     return 1;
-}
-
-sub css {
-    return <<CSS;
-<style media="all" type="text/css" >
-    \@import url(%PUBURLPATH%/%SYSTEMWEB%/TimeTrackerPlugin/timetracker.css?r=$RELEASE)
-</style>
-CSS
-}
-
-sub _timetrackerTAG {
-    my($session, $params, $topic, $web, $topicObject) = @_;
-
-    my $id = $params->{_DEFAULT};
-    return 'Please specify id' unless $id;
-
-    my $date = Foswiki::Func::formatTime(time(), '$year$mo$day');
-    my $todaystopic = "${id}_$date";
-
-    my $contents;
-    if ( Foswiki::Func::topicExists( $web, $todaystopic ) ){
-        my $meta;
-        ($meta, $contents) = Foswiki::Func::readTopic( $web, $todaystopic );
-    } else {
-        $contents = <<TABLE;
-<div id="$id" class="TimeTrackerField">
-Date: <span class="TimeTrackerDate">$date</span>
-<table class="TimeTrackerTable" rules="all">
-    <thead>
-        <tr><th>Tools</th><th> Activity </th><th>Time log</th><th>Time spent</th></tr>
-    </thead><tbody>
-    </tbody>
-</table>
-</div>
-%TIMETRACKERJS%
-TABLE
-    }
-
-    return $contents;
-}
-
-sub _timetrackerjsTAG {
-    my $css = css();
-    my $js = js();
-
-    Foswiki::Func::addToZone("script", "TimeTrackerPlugin", <<SCRIPT, "JQUERYPLUGIN");
-$css$js
-SCRIPT
-    return '';
-}
-
-sub js {
-    return <<SCRIPT;
-<script type='text/javascript' src='%PUBURLPATH%/%SYSTEMWEB%/TimeTrackerPlugin/timetracker.js?r=$RELEASE'></script>
-SCRIPT
-}
-
-sub restStore {
-    my ( $session, $subject, $verb, $response ) = @_;
-    my $query = $session->{request};
-    my $data = $query->{param}->{data};
-    my $id = $query->{param}->{id};
-    my $web = $query->{param}->{web};
-    my $date = $query->{param}->{date};
-
-    $data = @$data[0] if( $data );
-    $web = @$web[0] if( $web );
-    $id = @$id[0] if( $id );
-
-    my $error = '';
-    $error .= ' Received no data!' unless ( $data );
-    $error .= ' Received no id!' unless ( $id );
-    $error .= ' Received no web!' unless ( $web );
-    if( $error ) {
-        $response->status( "400 $error" );
-        return "Error: $error";
-    }
-
-    $data .= '%TIMETRACKERJS%';
-
-    $date = @$date[0] if $date;
-    $date = Foswiki::Func::formatTime(time(), '$year$mo$day') unless $date;
-    my $topic = $id.'_'.$date;
-    ($web, $topic) = Foswiki::Func::normalizeWebTopicName( $web, $topic );
-    try {
-        Foswiki::Func::saveTopic( $web, $topic, undef, $data, {forcenewrevision=>1, dontlog=>1} );
-    } catch Foswiki::AccessControlException with {
-        my $error = "Your may not write to '$web.$topic'!";
-        $response->status( "401 $error" );
-        Foswiki::Func::writeWarning("$error");
-        return $error;
-    } catch Error::Simple with {
-        my $error = shift;
-        $response->status( "500 $error" );
-        Foswiki::Func::writeWarning("$error");
-        return $error
-    };
-    return;
 }
 
 1;
