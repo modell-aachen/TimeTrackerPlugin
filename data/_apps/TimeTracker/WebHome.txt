@@ -1,4 +1,5 @@
 %VUE%
+%JQREQUIRE{"jqp::moment"}%
 <div id="timeTracker">
     <div id="activities">
         <vue-activity-table :activities="activities" :totaltimes="totaltimes"></vue-activity-table>

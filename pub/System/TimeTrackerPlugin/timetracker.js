@@ -72,7 +72,7 @@ var ActivityComponent = Vue.extend({
             '<td>Redmine: TODO Update<br/>'+
                 '<label for="commentCheckBox{{ activity.id }}">Include comment: </label><input type="checkbox" id="commentCheckBox{{ activity.id }}" v-model="activity.comment.sendToRedmine"/>'+
             '</td>'+
-            '<td>{{ totaltime }}</td>'+
+            '<td>{{ totaltime.hours }}:{{ totaltime.minutes }}:{{ totaltime.seconds }}<br/>{{ totaltime.totalhours }}</td>'+
             '<td>TODO Play/Pause Button</td>'+
         '</tr>'
 });
@@ -100,8 +100,21 @@ jQuery(document).ready(function($) {
         totaltimes: function () {
             var res = {};
             for(var a in this.activities) {
-                if(this.activities.hasOwnProperty(a)){
-                    res[this.activities[a].id] = this.activities[a].timeSpans[0].endTime;
+                if(this.activities.hasOwnProperty(a)) {
+                    var totalms = 0;
+                    for(var i in this.activities[a].timeSpans) {
+                        if(this.activities[a].timeSpans.hasOwnProperty(i)) {
+                            var span = this.activities[a].timeSpans[i];
+                            totalms += (span.endTime - span.startTime);
+                        }
+                    }
+                    var dur = moment.duration(totalms);
+                    res[this.activities[a].id] = {};
+                    res[this.activities[a].id].totalms = totalms;
+                    res[this.activities[a].id].totalhours = dur.asHours();
+                    res[this.activities[a].id].hours = dur.hours();
+                    res[this.activities[a].id].minutes = dur.minutes();
+                    res[this.activities[a].id].seconds = dur.seconds();
                 }
             }
             return res;
