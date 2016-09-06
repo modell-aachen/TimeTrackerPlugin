@@ -62,31 +62,31 @@ window.testData = {
 /* Code */
 // Template for one activity
 var ActivityComponent = Vue.extend({
-    props: ['id', 'project', 'ticket', 'type', 'comment', 'timeSpans'],
+    props: ['activity', 'index', 'totaltime'],
     template:
         '<tr>'+
-            '<td>{{ project.name }}</td>'+
-            '<td>{{ ticket.subject }}</td>'+
-            '<td>{{ type.name }}</td>'+
-            '<td>{{ comment.text }}</td>'+
+            '<td>{{ activity.project.name }}</td>'+
+            '<td>{{ activity.ticket.subject }}</td>'+
+            '<td>{{ activity.type.name }}</td>'+
+            '<td>{{ activity.comment.text }}</td>'+
             '<td>Redmine: TODO Update<br/>'+
-                '<label for="commentCheckBox{{ id }}">Include comment: </label><input type="checkbox" id="commentCheckBox{{ id }}" v-model="comment.sendToRedmine"/>'+
+                '<label for="commentCheckBox{{ activity.id }}">Include comment: </label><input type="checkbox" id="commentCheckBox{{ activity.id }}" v-model="activity.comment.sendToRedmine"/>'+
             '</td>'+
-            '<td>{{ totalTime }}</td>'+
+            '<td>{{ totaltime }}</td>'+
             '<td>TODO Play/Pause Button</td>'+
         '</tr>'
 });
 
 // Template for the whole table listing the activities
 var ActivityTableComponent = Vue.extend({
-    props: ['activities'],
+    props: ['activities', 'totaltimes'],
     template:
         '<table>'+
             '<thead>'+
                 '<tr><th>Project</th><th>Ticket</th><th>Type</th><th>Comment</th><th>Status</th><th>Total Time</th><th>Run</th></tr>'+
             '</thead>'+
             '<tbody>'+
-                '<tr is="vue-activity" v-for="activity in activities" :id="activity.id" :project="activity.project" :ticket="activity.ticket" :type="activity.type" :comment="activity.comment" :timeSpans="activity.timeSpans"></tr>'+
+                '<tr is="vue-activity" v-for="activity in activities" :activity="activity" :index="$index" :totaltime="totaltimes[activity.id]"></tr>'+
             '</tbody>'+
         '</table>',
     components: {
@@ -96,14 +96,42 @@ var ActivityTableComponent = Vue.extend({
 Vue.component('vue-activity-table', ActivityTableComponent);
 
 jQuery(document).ready(function($) {
+    var comp = {
+        totaltimes: function () {
+            var res = {};
+            for(var a in this.activities) {
+                if(this.activities.hasOwnProperty(a)){
+                    res[this.activities[a].id] = this.activities[a].timeSpans[0].endTime;
+                }
+            }
+            return res;
+        }
+    };
     var vm = new Vue({
         el: '#timeTracker',
         data: testData,
-        computed: {
-
-        }
+        computed: comp
     });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /* Data format */
