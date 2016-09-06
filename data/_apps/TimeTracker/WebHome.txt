@@ -1,0 +1,9 @@
+%VUE%
+<div id="timeTracker">
+    <div id="activities">
+        <vue-activity-table :activities="activities"></vue-activity-table>
+    </div>
+    <div id="addActivity">
+
+    </div>
+</div>
