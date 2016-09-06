@@ -78,8 +78,28 @@ var ActivityComponent = Vue.extend({
                 '<label for="commentCheckBox{{ activity.id }}">Include comment: </label><input type="checkbox" id="commentCheckBox{{ activity.id }}" v-model="activity.comment.sendToRedmine"/>'+
             '</td>'+
             '<td>{{ totaltime.hours }}:{{ totaltime.minutes }}:{{ totaltime.seconds }}<br/>{{ totaltime.totalhours }}</td>'+
-            '<td>TODO Play/Pause Button</td>'+
-        '</tr>'
+            '<td>'+
+                // Depending on wether theres a running timer this button is either a play or a stop button
+                '<button :class="totaltime.running ? \'fa fa-pause\' : \'fa fa-play\'" @click="totaltime.running ? stop() : start()"></button>'+
+            '</td>'+
+        '</tr>',
+    methods: {
+        // This starts a new timeSpan for the corresponding activity
+        start: function () {
+            this.activity.timeSpans.push({
+                "startTime": moment(), // Current time as start
+                "endTime": 0 // Running timer, so no end
+            });
+        },
+        // This stops every running timeSpan for the corresponding activity
+        stop: function () {
+            for(var i=0; i < this.activity.timeSpans.length; i++) {
+                if(this.activity.timeSpans[i].endTime === 0) { // This timeSpan is running
+                    this.activity.timeSpans[i].endTime = moment(); // Stop the timeSpan by settings its endTime
+                }
+            }
+        }
+    }
 });
 
 // Template for the whole table listing the activities
@@ -111,6 +131,7 @@ jQuery(document).ready(function($) {
                 for(var a in this.activities) {
                     if(this.activities.hasOwnProperty(a)) {
                         var totalms = 0;
+                        var running = false;
                         // Sum up the ms of each timeSpan
                         for(var i in this.activities[a].timeSpans) {
                             if(this.activities[a].timeSpans.hasOwnProperty(i)) {
@@ -119,11 +140,13 @@ jQuery(document).ready(function($) {
                                     totalms += (span.endTime - span.startTime); // Add stopped time diff
                                 } else {
                                     totalms += (this.currentms - span.startTime); // Add time diff since the startTime
+                                    running = true;
                                 }
                             }
                         }
                         var dur = moment.duration(totalms);
                         res[this.activities[a].id] = {
+                            running: running,
                             totalms: totalms,
                             totalhours: dur.asHours(), // Decimal hours for Redmine
                             // Store each part of HH:MM:SS with a leading 0 if needed
