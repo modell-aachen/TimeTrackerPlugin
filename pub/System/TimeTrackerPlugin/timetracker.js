@@ -90,6 +90,7 @@ var ActivityComponent = Vue.extend({
                 "startTime": moment(), // Current time as start
                 "endTime": 0 // Running timer, so no end
             });
+            this.$root.update();
         },
         // This stops every running timeSpan for the corresponding activity
         stop: function () {
@@ -167,15 +168,18 @@ jQuery(document).ready(function($) {
         computed: comp, // Computed propertys from above
         methods: {
             // Update everything time dependant by triggering vue recalculation
-            update : function () {
+            loopupdate : function () {
+                this.update();
+                setTimeout(this.loopupdate, 1000);
+            },
+            update: function () {
                 this.currentms = moment();
-                setTimeout(this.update, 1000);
             }
         }
     });
 
     // Start the update cycle
-    vm.update();
+    vm.loopupdate();
 });
 /* CODE END */
 
