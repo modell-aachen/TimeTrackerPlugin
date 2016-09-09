@@ -65,6 +65,7 @@ var testData = {
 
 
 /* CODE BEGIN */
+var stopOtherTimersOnPlay = true;
 // Template for one activity
 var ActivityComponent = Vue.extend({
     props: ['activity', 'index', 'totaltime'],
@@ -86,6 +87,11 @@ var ActivityComponent = Vue.extend({
     methods: {
         // This starts a new timeSpan for the corresponding activity
         start: function () {
+            // Stop every running timer if this setting is activated
+            if(stopOtherTimersOnPlay) {
+                this.$root.stopAll();
+            }
+            // Start a new Timer for this activity
             this.activity.timeSpans.push({
                 "startTime": moment(), // Current time as start
                 "endTime": 0 // Running timer, so no end
@@ -174,6 +180,21 @@ jQuery(document).ready(function($) {
             },
             update: function () {
                 this.currentms = moment();
+            },
+            // Stop all running timer
+            stopAll: function () {
+                for(var a in this.activities) {
+                    if(this.activities.hasOwnProperty(a)) {
+                        for(var i in this.activities[a].timeSpans) {
+                            if(this.activities[a].timeSpans.hasOwnProperty(i)) {
+                                var span = this.activities[a].timeSpans[i];
+                                if(span.endTime === 0) { // This timeSpan is running
+                                    span.endTime = moment(); // Stop the timeSpan by settings its endTime
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     });
