@@ -1,3 +1,19 @@
+form {
+    display: table;
+}
+p {
+    display: table-row;
+}
+label,
+input {
+    display: table-cell;
+}
+
+form input[type="checkbox"] {
+    margin-left: 0px;
+}
+
+/*
 table.TimeTrackerTable,
 table.TimeTrackerControlls,
 div.TimeTrackerMessage {
@@ -49,3 +65,4 @@ span.TimeTrackerStarted {
 .TimeTrackerBooked .TimeTrackerUnBook {
     display: initial;
 }
+*/

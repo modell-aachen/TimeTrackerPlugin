@@ -1,5 +1,11 @@
 /* TEST DATA */
 var testData = {
+    "form" : {
+        "ticket": "",
+        "type": "",
+        "comment": "",
+        "sendComment": true
+    },
     "currentms": 0,
     "activities": [
         {
@@ -66,6 +72,7 @@ var testData = {
 
 /* CODE BEGIN */
 var stopOtherTimersOnPlay = true;
+var allowEmptyActivity = false;
 // Template for one activity
 var ActivityComponent = Vue.extend({
     props: ['activity', 'index', 'totaltime'],
@@ -128,6 +135,63 @@ var ActivityTableComponent = Vue.extend({
 });
 Vue.component('vue-activity-table', ActivityTableComponent);
 
+// Template for adding a new activity
+var AddActivityComponent = Vue.extend({
+    props: ['activities', 'form'],
+    template:
+        '<div id="addActivity">'+
+            '<form @submit.prevent="addActivity()">'+
+                '<p><label for="ticket">Ticket</label><input type="text" name="ticket" id="ticket" v-model="form.ticket"><br/></p>'+
+                '<p><label for="type">Type</label><select name="type" id="type" v-model="form.type"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select><br/></p>'+
+                '<p><label for="comment">Comment</label><input type="text" name="comment" id="comment" v-model="form.comment"></p>'+
+                '<p><label for="sendComment">Send Comment</label><input type="checkbox" name="sendComment" id="sendComment" v-model="form.sendComment"></p>'+
+                '<p><input type="submit" value="Add Activity"></p>'+
+            '</form>'+
+        '</div>',
+    methods: {
+        addActivity: function () {
+            if(this.form.ticket !== "" || this.form.type !== "" || this.form.comment !== "" || allowEmptyActivity) { // Prevent empty activity unless setted otherwise
+                if(stopOtherTimersOnPlay) {
+                    this.$root.stopAll();
+                }
+                this.activities.push({
+                    "id": moment(),
+                    "project": { // TODO
+                        "id": 125,
+                        "name": "Project Name"
+                    },
+                    "ticket": { // TODO
+                        "id": 125,
+                        "subject": this.form.ticket
+                    },
+                    "type": {
+                        "id": 125, // TODO
+                        "name": this.form.type
+                    },
+                    "comment": {
+                        "sendToRedmine": this.form.sendComment,
+                        "text": this.form.comment
+                    },
+                    "timeSpans": [
+                        {
+                            "startTime": moment(),
+                            "endTime": 0
+                        }
+                    ]
+                });
+                this.form = {
+                    "ticket": "",
+                    "type": "",
+                    "comment": "",
+                    "sendComment": true
+                };
+            }
+        }
+    }
+});
+Vue.component('vue-add-activity', AddActivityComponent);
+
+// Initialize Vue when the document is ready to be manipulated
 jQuery(document).ready(function($) {
     // Set up computed propertys
     var comp = {
@@ -224,6 +288,7 @@ jQuery(document).ready(function($) {
 
 
 /* Data format */
+// Additionally "form" and "currentms" are needed for Vue computations
 var dataFormat = {
     "activities": [
         {

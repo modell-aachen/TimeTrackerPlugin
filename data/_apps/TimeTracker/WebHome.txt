@@ -8,7 +8,5 @@
     <div id="activities">
         <vue-activity-table :activities="activities" :totaltimes="totaltimes"></vue-activity-table>
     </div>
-    <div id="addActivity">
-
-    </div>
+    <vue-add-activity :activities="activities" :form="form"></vue-add-activity>
 </div>
