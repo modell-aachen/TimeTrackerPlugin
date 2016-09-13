@@ -85,6 +85,9 @@ sub restSave {
     my $date = $data->{date};
     my $time = $data->{time};
     # TODO check if date and time is correct
+    my $answer = {
+        'action' => $action
+    };
 
     # Foswiki::Meta::registerMETA('TIME', many => 1, require => ['activity']);
     # Foswiki::Meta::put('TIME', {activity => "asdf"});
@@ -102,8 +105,19 @@ sub restSave {
 
     # Perform action
     switch($action) {
+        case "getActivities" {
+            # Send all stored activities back (in json: array of activity objects)
+            my @activities = ();
+            my @data = $meta->find('TIME');
+            foreach my $act (@data) {
+                push(@activities, from_json(Foswiki::urlDecode($act->{activity})));
+            }
+            $answer->{activities} = \@activities;
+        }
         case "addActivity" {
-            $meta->putKeyed('TIME', {name => $data->{value}{id}, activity => Foswiki::urlEncode(to_json($data->{value}))});
+            # Add the given activity to the meta dataset
+            $meta->putKeyed('TIME', {name => $value->{id}, activity => Foswiki::urlEncode(to_json($value))});
+            $answer->{activityId} = $value->{id};
         }
     }
 
@@ -115,7 +129,7 @@ sub restSave {
     $meta->save();
     $meta->finish();
     $response->status(200);
-    return to_json($data);
+    return to_json($answer);
 }
 
 1;

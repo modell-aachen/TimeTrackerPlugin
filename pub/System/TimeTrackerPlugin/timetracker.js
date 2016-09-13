@@ -285,7 +285,16 @@ jQuery(document).ready(function($) {
             },
             // Handle response from rest
             restResponse: function (data) {
-                console.log("restResponse", JSON.parse(data));
+                var answer = JSON.parse(data);
+                console.log("restResponse", answer);
+                switch(answer.action) {
+                    case "getActivities":
+                        this.activities = answer.activities;
+                    break;
+                    case "addActivity":
+                        // TODO Somehow display correctly saved data, grey out before
+                    break;
+                }
             },
             restError: function (err) {
                 console.warn("restError", err);
@@ -293,6 +302,7 @@ jQuery(document).ready(function($) {
         }
     });
 
+    vm.sendToRest("getActivities", {});
     // Start the update cycle
     vm.loopupdate();
 });
