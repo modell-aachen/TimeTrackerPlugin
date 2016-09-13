@@ -114,10 +114,15 @@ sub restSave {
             }
             $answer->{activities} = \@activities;
         }
-        case "addActivity" {
-            # Add the given activity to the meta dataset
-            $meta->putKeyed('TIME', {name => $value->{id}, activity => Foswiki::urlEncode(to_json($value))});
-            $answer->{activityId} = $value->{id};
+        case "setActivities" {
+            # Update or create every activity in the activities array
+            my @updated = ();
+            my @activities = @{$value->{activities}}; # @{...} is for getting the array itself instead of a reference to the array
+            foreach my $act (@activities) {
+                $meta->putKeyed('TIME', {name => $act->{id}, activity => Foswiki::urlEncode(to_json($act))});
+                push(@updated, $act->{id});
+            }
+            $answer->{settedIds} = \@updated;
         }
     }
 
