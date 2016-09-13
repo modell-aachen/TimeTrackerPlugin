@@ -65,18 +65,52 @@ STYLE
     my %opts = (authenticate => 1, validate => 0, http_allow => "POST");
     Foswiki::Func::registerRESTHandler('save', \&restSave, %opts);
 
+
     return 1;
 }
 
 sub restSave {
+    # Input
     my ( $session, $subject, $verb, $response ) = @_;
     my $query = $session->{request};
     my $payload = $query->param('data');
     my $data = from_json($payload);
 
+    # Foswiki::Meta::registerMETA('TIME', many => 1, require => ['activity']);
+    # Foswiki::Meta::put('TIME', {activity => "asdf"});
     # $data->{id}
     # $data->{comment}
-    Foswiki::Func::writeWarning($data->{action});
+    # Foswiki::Func::writeWarning($data->{action});
+
+
+    # Get meta (and create it if necessary) for todays topic, see Func::saveTopic
+    my $web = $data->{web};
+    my $todaystopic = "$data->{user}_$data->{date}";
+    my($meta, $content);
+    if(Foswiki::Func::topicExists($web, $todaystopic)) {
+        ($meta, $content) = Foswiki::Func::readTopic($web, $todaystopic);
+    } else {
+        $meta = new Foswiki::Meta($Foswiki::Plugins::SESSION, $web, $todaystopic);
+        $content = '<span>Data stored in Meta</span>';
+    }
+
+
+    # Save meta and content
+    try {
+        Foswiki::Func::saveTopic($web, $todaystopic, $meta, $content, {forcenewrevision=>1, dontlog=>1});
+    } catch Foswiki::AccessControlException with {
+        my $error = "Your may not write to '$web.$todaystopic'!";
+        $response->status( "401 $error" );
+        Foswiki::Func::writeWarning("$error");
+        return $error;
+    } catch Error::Simple with {
+        my $error = shift;
+        $response->status( "500 $error" );
+        Foswiki::Func::writeWarning("$error");
+        return $error
+    };
+
+
 
     $response->status(200);
     return to_json($data);

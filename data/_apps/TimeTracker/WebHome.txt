@@ -5,8 +5,6 @@
     text="<link rel=\"stylesheet\" href=\"%PUBURL%/System/FontAwesomeContrib/css/font-awesome.min.css\"/>"
 }%
 <div id="timeTracker">
-    <div id="activities">
-        <vue-activity-table :activities="activities" :totaltimes="totaltimes"></vue-activity-table>
-    </div>
+    <vue-activity-table :activities="activities" :totaltimes="totaltimes"></vue-activity-table>
     <vue-add-activity :activities="activities" :form="form"></vue-add-activity>
 </div>

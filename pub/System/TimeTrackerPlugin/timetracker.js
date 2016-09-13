@@ -120,15 +120,17 @@ var ActivityComponent = Vue.extend({
 var ActivityTableComponent = Vue.extend({
     props: ['activities', 'totaltimes'],
     template:
-        '<table>'+
-            '<thead>'+
-                '<tr><th>Project</th><th>Ticket</th><th>Type</th><th>Comment</th><th>Status</th><th>Total Time</th><th>Run</th></tr>'+
-            '</thead>'+
-            '<tbody>'+
-                // Add a table row for each activity and apply the vue-activity template defined in ActivityComponent, needed values are passed with :val="val" attribute in parent and props: ['val'] entry in child
-                '<tr is="vue-activity" v-for="activity in activities" :activity="activity" :index="$index" :totaltime="totaltimes[activity.id]"></tr>'+
-            '</tbody>'+
-        '</table>',
+        '<div id="activities">'+
+            '<table>'+
+                '<thead>'+
+                    '<tr><th>Project</th><th>Ticket</th><th>Type</th><th>Comment</th><th>Status</th><th>Total Time</th><th>Run</th></tr>'+
+                '</thead>'+
+                '<tbody>'+
+                    // Add a table row for each activity and apply the vue-activity template defined in ActivityComponent, needed values are passed with :val="val" attribute in parent and props: ['val'] entry in child
+                    '<tr is="vue-activity" v-for="activity in activities" :activity="activity" :index="$index" :totaltime="totaltimes[activity.id]"></tr>'+
+                '</tbody>'+
+            '</table>'+
+        '</div>',
     components: {
         'vue-activity': ActivityComponent
     }
@@ -187,7 +189,7 @@ var AddActivityComponent = Vue.extend({
                     "sendComment": true
                 };
 
-                this.$root.sendToRest({"action": "addActivity", "value": newAct});
+                this.$root.sendToRest("addActivity", newAct);
             }
         }
     }
@@ -264,13 +266,20 @@ jQuery(document).ready(function($) {
                 }
             },
             // Send the JSON data to rest
-            sendToRest: function (data) {
+            sendToRest: function (action, value) {
+                var payload = {
+                    action: action,
+                    value: value,
+                    web: foswiki.getPreference('WEB'),
+                    user: foswiki.getPreference('WIKINAME'),
+                    date: moment().format('YYYYMMDD')
+                };
                 $.ajax({
                     url: "/bin/rest/TimeTrackerPlugin/save",
                     method: 'POST',
                     success: this.restResponse,
                     error: this.restError,
-                    data: {data: JSON.stringify(data)}
+                    data: {data: JSON.stringify(payload)}
                 });
             },
             // Handle response from rest
