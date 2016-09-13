@@ -1,12 +1,14 @@
 /* TEST DATA */
 var testData = {
-    "form" : {
+    "form" : { // Storage for the "new activity form" data
         "ticket": "",
         "type": "",
         "comment": "",
         "sendComment": true
     },
-    "currentms": 0,
+    "currentms": 0, // = moment().valueOf(), updated every second for Vue calculations
+    "notSaved": [], // Storing ids of every activity that is not exactly like this at the server
+    "openSaves": 0, // Number of save operations to be handled from rest
     "activities": []
 };
 /*
@@ -277,7 +279,14 @@ jQuery(document).ready(function($) {
             },
             // Send the JSON data to rest
             sendToRest: function (action, value) {
-                console.log("sending", action, value);
+                if(action === "setActivities") {
+                    // Store ids of changed activities
+                    for(var a in value.activities) {
+                        this.notSaved.push(value.activities[a].id);
+                    }
+                    this.openSaves++;
+                }
+
                 var payload = {
                     action: action,
                     value: value,
@@ -297,7 +306,6 @@ jQuery(document).ready(function($) {
             // Handle response from rest
             restResponse: function (data) {
                 var answer = JSON.parse(data);
-                console.log("restResponse", answer);
                 switch(answer.action) {
                     case "getActivities":
                         this.activities = answer.activities;
@@ -306,7 +314,18 @@ jQuery(document).ready(function($) {
                         // TODO Somehow display correctly saved data, grey out before
                     break;
                     case "setActivities":
-                        // TODO display error with retry button if something went wron
+                        // Remove every saved activity from the notSaved array
+                        for(var i in answer.settedIds) {
+                            var index = this.notSaved.indexOf(answer.settedIds[i]);
+                            if(index > -1){
+                                this.notSaved.splice(index, 1);
+                            }
+                        }
+                        this.openSaves--;
+                        if(this.notSaved.length > 0 && this.openSaves === 0) {
+                            console.error("Something went wrong during saving the activities", this.notSaved);
+                            // TODO mark unsaved activities and show retry button if something went wrong
+                        }
                     break;
                 }
             },
