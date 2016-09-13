@@ -100,7 +100,7 @@ var ActivityComponent = Vue.extend({
             }
             // Start a new Timer for this activity
             this.activity.timeSpans.push({
-                "startTime": moment(), // Current time as start
+                "startTime": moment().valueOf(), // Current time as start
                 "endTime": 0 // Running timer, so no end
             });
             this.$root.update();
@@ -109,7 +109,7 @@ var ActivityComponent = Vue.extend({
         stop: function () {
             for(var i=0; i < this.activity.timeSpans.length; i++) {
                 if(this.activity.timeSpans[i].endTime === 0) { // This timeSpan is running
-                    this.activity.timeSpans[i].endTime = moment(); // Stop the timeSpan by settings its endTime
+                    this.activity.timeSpans[i].endTime = moment().valueOf(); // Stop the timeSpan by settings its endTime
                 }
             }
         }
@@ -154,8 +154,8 @@ var AddActivityComponent = Vue.extend({
                 if(stopOtherTimersOnPlay) {
                     this.$root.stopAll();
                 }
-                this.activities.push({
-                    "id": moment(),
+                var newAct = {
+                    "id": moment().valueOf(),
                     "project": { // TODO
                         "id": 125,
                         "name": "Project Name"
@@ -174,17 +174,20 @@ var AddActivityComponent = Vue.extend({
                     },
                     "timeSpans": [
                         {
-                            "startTime": moment(),
+                            "startTime": moment().valueOf(),
                             "endTime": 0
                         }
                     ]
-                });
+                };
+                this.activities.push(newAct);
                 this.form = {
                     "ticket": "",
                     "type": "",
                     "comment": "",
                     "sendComment": true
                 };
+
+                this.$root.sendToRest({"action": "addActivity", "value": newAct});
             }
         }
     }
@@ -243,7 +246,7 @@ jQuery(document).ready(function($) {
                 setTimeout(this.loopupdate, 1000);
             },
             update: function () {
-                this.currentms = moment();
+                this.currentms = moment().valueOf();
             },
             // Stop all running timer
             stopAll: function () {
@@ -253,12 +256,29 @@ jQuery(document).ready(function($) {
                             if(this.activities[a].timeSpans.hasOwnProperty(i)) {
                                 var span = this.activities[a].timeSpans[i];
                                 if(span.endTime === 0) { // This timeSpan is running
-                                    span.endTime = moment(); // Stop the timeSpan by settings its endTime
+                                    span.endTime = moment().valueOf(); // Stop the timeSpan by settings its endTime
                                 }
                             }
                         }
                     }
                 }
+            },
+            // Send the JSON data to rest
+            sendToRest: function (data) {
+                $.ajax({
+                    url: "/bin/rest/TimeTrackerPlugin/save",
+                    method: 'POST',
+                    success: this.restResponse,
+                    error: this.restError,
+                    data: {data: JSON.stringify(data)}
+                });
+            },
+            // Handle response from rest
+            restResponse: function (data) {
+                console.log("restResponse", JSON.parse(data));
+            },
+            restError: function (err) {
+                console.warn("restError", err);
             }
         }
     });

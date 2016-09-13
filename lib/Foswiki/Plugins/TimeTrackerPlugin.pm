@@ -27,6 +27,7 @@ use warnings;
 
 use Foswiki::Func    ();    # The plugins API
 use Foswiki::Plugins ();    # For the API version
+use JSON;
 
 use Error qw( :try );
 
@@ -60,7 +61,25 @@ STYLE
     Foswiki::Func::addToZone('head', 'TIMETRACKER::CSS', $style);
     Foswiki::Func::addToZone('script', 'TIMETRACKER::JS', $script, 'JQUERYPLUGIN::FOSWIKI::PREFERENCES,VUEJSPLUGIN');
 
+
+    my %opts = (authenticate => 1, validate => 0, http_allow => "POST");
+    Foswiki::Func::registerRESTHandler('save', \&restSave, %opts);
+
     return 1;
+}
+
+sub restSave {
+    my ( $session, $subject, $verb, $response ) = @_;
+    my $query = $session->{request};
+    my $payload = $query->param('data');
+    my $data = from_json($payload);
+
+    # $data->{id}
+    # $data->{comment}
+    Foswiki::Func::writeWarning($data->{action});
+
+    $response->status(200);
+    return to_json($data);
 }
 
 1;
