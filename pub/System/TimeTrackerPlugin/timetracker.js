@@ -272,7 +272,8 @@ jQuery(document).ready(function($) {
                     value: value,
                     web: foswiki.getPreference('WEB'),
                     user: foswiki.getPreference('WIKINAME'),
-                    date: moment().format('YYYYMMDD')
+                    date: moment().format('YYYYMMDD'),
+                    time: moment().valueOf()
                 };
                 $.ajax({
                     url: "/bin/rest/TimeTrackerPlugin/save",

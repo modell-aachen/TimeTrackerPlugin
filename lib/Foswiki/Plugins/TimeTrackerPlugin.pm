@@ -28,6 +28,7 @@ use warnings;
 use Foswiki::Func    ();    # The plugins API
 use Foswiki::Plugins ();    # For the API version
 use JSON;
+use Switch;
 
 use Error qw( :try );
 
@@ -64,7 +65,7 @@ STYLE
 
     my %opts = (authenticate => 1, validate => 0, http_allow => "POST");
     Foswiki::Func::registerRESTHandler('save', \&restSave, %opts);
-
+    Foswiki::Meta::registerMETA('TIME', many => 1, require => ['activity']);
 
     return 1;
 }
@@ -76,42 +77,43 @@ sub restSave {
     my $payload = $query->param('data');
     my $data = from_json($payload);
 
+    # Store variables
+    my $action = $data->{action};
+    my $value = $data->{value};
+    my $web = $data->{web};
+    my $user = $data->{user};
+    my $date = $data->{date};
+    my $time = $data->{time};
+    # TODO check if date and time is correct
+
     # Foswiki::Meta::registerMETA('TIME', many => 1, require => ['activity']);
     # Foswiki::Meta::put('TIME', {activity => "asdf"});
-    # $data->{id}
-    # $data->{comment}
+    # $data->{value}{id}
+    # $data->{value}{comment}{sendToRedmine}
     # Foswiki::Func::writeWarning($data->{action});
 
 
-    # Get meta (and create it if necessary) for todays topic, see Func::saveTopic
-    my $web = $data->{web};
-    my $todaystopic = "$data->{user}_$data->{date}";
-    my($meta, $content);
-    if(Foswiki::Func::topicExists($web, $todaystopic)) {
-        ($meta, $content) = Foswiki::Func::readTopic($web, $todaystopic);
-    } else {
-        $meta = new Foswiki::Meta($Foswiki::Plugins::SESSION, $web, $todaystopic);
-        $content = '<span>Data stored in Meta</span>';
+    # Create todays topic if not already existing
+    my $todaystopic = "$user"."_"."$date";
+    Foswiki::Func::saveTopic($web, $todaystopic, undef, '', {dontlog => 1}) unless Foswiki::Func::topicExists($web, $todaystopic);
+    # Get meta and content of storing topic
+    my ($meta, $content) = Foswiki::Func::readTopic($web, $todaystopic);
+
+
+    # Perform action
+    switch($action) {
+        case "addActivity" {
+            $meta->putKeyed('TIME', {name => $data->{value}{id}, activity => Foswiki::urlEncode(to_json($data->{value}))});
+        }
     }
 
 
-    # Save meta and content
-    try {
-        Foswiki::Func::saveTopic($web, $todaystopic, $meta, $content, {forcenewrevision=>1, dontlog=>1});
-    } catch Foswiki::AccessControlException with {
-        my $error = "Your may not write to '$web.$todaystopic'!";
-        $response->status( "401 $error" );
-        Foswiki::Func::writeWarning("$error");
-        return $error;
-    } catch Error::Simple with {
-        my $error = shift;
-        $response->status( "500 $error" );
-        Foswiki::Func::writeWarning("$error");
-        return $error
-    };
 
 
 
+    # Save and send answer to client
+    $meta->save();
+    $meta->finish();
     $response->status(200);
     return to_json($data);
 }
