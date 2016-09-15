@@ -100,7 +100,7 @@ var ActivityComponent = Vue.extend({
                 '<p>Redmine: TODO Update</p>'+
                 '<p><label for="commentCheckBox{{ activity.id }}">Include comment: </label><input type="checkbox" id="commentCheckBox{{ activity.id }}" v-model="activity.comment.sendToRedmine" disabled/></p>'+
             '</td>'+
-            '<td>{{ totaltime.hours }}:{{ totaltime.minutes }}:{{ totaltime.seconds }}<br/>{{ totaltime.totalhours }}</td>'+
+            '<td>{{ totaltime.hours }}:{{ totaltime.minutes }}:{{ totaltime.seconds }}<br/>{{ totaltime.totalhours }}h</td>'+
             '<td>'+
                 // Depending on wether theres a running timer this button is either a play or a stop button
                 '<button :class="totaltime.running ? \'fa fa-fw fa-lg fa-pause\' : \'fa fa-fw fa-lg fa-play\'" @click.stop="totaltime.running ? stop() : start()"></button>'+
@@ -110,11 +110,13 @@ var ActivityComponent = Vue.extend({
             '<td colspan="7">'+
                 '<div class="edit">'+
                     '<form @submit.prevent="saveEdit()">'+
-                        '<p><label for="ticket">Ticket</label><input type="text" name="ticket" id="ticket" v-model="edit.ticket"><br/></p>'+
-                        '<p><label for="type">Type</label><select name="type" id="type" v-model="edit.type"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select><br/></p>'+
-                        '<p><label for="comment">Comment</label><input type="text" name="comment" id="comment" v-model="edit.comment"></p>'+
-                        '<p><label for="sendComment">Send Comment</label><input type="checkbox" name="sendComment" id="sendComment" v-model="edit.sendComment"></p>'+
-                        '<p><input type="submit" value="Save Edit"></p>'+
+                        '<div>'+
+                            '<p><label for="ticket">Ticket</label><input type="text" name="ticket" id="ticket" v-model="edit.ticket"><br/></p>'+
+                            '<p><label for="type">Type</label><select name="type" id="type" v-model="edit.type"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select><br/></p>'+
+                            '<p><label for="comment">Comment</label><input type="text" name="comment" id="comment" v-model="edit.comment"></p>'+
+                            '<p><label for="sendComment">Send Comment</label><input type="checkbox" name="sendComment" id="sendComment" v-model="edit.sendComment"></p>'+
+                        '</div>'+
+                        '<button type="submit">Save Edit</button><button @click.stop.prevent="cancelEdit()">Cancel Edit</button><button @click.stop.prevent="delete()">Delete Activity</button>'+
                     '</form>'+
                 '</div>'+
                 '<div>'+
@@ -184,6 +186,19 @@ var ActivityComponent = Vue.extend({
                 this.toggleDetails();
             }
         },
+        // Cancel the edit and reset the input fields
+        cancelEdit: function () {
+            this.edit = {
+                "ticket": this.activity.ticket.subject,
+                "type": this.activity.type.name,
+                "comment": this.activity.comment.text,
+                "sendComment": this.activity.comment.sendToRedmine
+            };
+        },
+        // Delete this Activity
+        delete: function () {
+            this.$root.sendToRest("deleteActivities", {activities: [this.activity]});
+        },
         // This toggles the display of the detailed view of an activity
         toggleDetails: function () {
             this.$el.nextElementSibling.nextElementSibling.classList.toggle("hidden");
@@ -216,6 +231,11 @@ var ActivityTableComponent = Vue.extend({
                     '<tr is="vue-activity" v-for="activity in activities" :activity="activity" :index="$index" :totaltime="totaltimes[activity.id]" :currentms="currentms"></tr>'+
                 '</tbody>'+
             '</table>'+
+            '<hr></hr>'+
+            '<div id="total">'+
+                '<div>{{ totaltimes[0].hours }}:{{ totaltimes[0].minutes }}:{{ totaltimes[0].seconds }}<br/>{{ totaltimes[0].totalhours }}h</div>'+
+                '<div>Todays Total Time:</div>'+
+            '</div>'+
         '</div>',
     components: {
         'vue-activity': ActivityComponent
@@ -229,11 +249,13 @@ var AddActivityComponent = Vue.extend({
     template:
         '<div id="addActivity">'+
             '<form @submit.prevent="addActivity()">'+
-                '<p><label for="ticket">Ticket</label><input type="text" name="ticket" id="ticket" v-model="form.ticket"><br/></p>'+
-                '<p><label for="type">Type</label><select name="type" id="type" v-model="form.type"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select><br/></p>'+
-                '<p><label for="comment">Comment</label><input type="text" name="comment" id="comment" v-model="form.comment"></p>'+
-                '<p><label for="sendComment">Send Comment</label><input type="checkbox" name="sendComment" id="sendComment" v-model="form.sendComment"></p>'+
-                '<p><input type="submit" value="Add Activity"></p>'+
+                '<div>'+
+                    '<p><label for="ticket">Ticket</label><input type="text" name="ticket" id="ticket" v-model="form.ticket"><br/></p>'+
+                    '<p><label for="type">Type</label><select name="type" id="type" v-model="form.type"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select><br/></p>'+
+                    '<p><label for="comment">Comment</label><input type="text" name="comment" id="comment" v-model="form.comment"></p>'+
+                    '<p><label for="sendComment">Send Comment</label><input type="checkbox" name="sendComment" id="sendComment" v-model="form.sendComment"></p>'+
+                    '<p><input type="submit" value="Add Activity"></p>'+
+                '</div>'+
             '</form>'+
         '</div>',
     methods: {
@@ -291,6 +313,7 @@ jQuery(document).ready(function($) {
             cache: false,
             get: function () {
                 var res = {};
+                var todaysTotal = 0;
                 for(var a in this.activities) {
                     if(this.activities.hasOwnProperty(a)) {
                         var totalms = 0;
@@ -307,6 +330,7 @@ jQuery(document).ready(function($) {
                                 }
                             }
                         }
+                        todaysTotal += totalms;
                         var dur = moment.duration(totalms);
                         res[this.activities[a].id] = {
                             running: running,
@@ -319,6 +343,15 @@ jQuery(document).ready(function($) {
                         };
                     }
                 }
+                var dur = moment.duration(todaysTotal);
+                res[0] = {
+                    totalms: todaysTotal,
+                    totalhours: dur.asHours().toFixed(4), // Decimal hours for Redmine
+                    // Store each part of HH:MM:SS with a leading 0 if needed
+                    hours: dur.hours() < 10 ? "0"+dur.hours() : dur.hours(),
+                    minutes: dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes(),
+                    seconds: dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds()
+                };
                 return res;
             }
         }
@@ -357,7 +390,7 @@ jQuery(document).ready(function($) {
             },
             // Send the JSON data to rest
             sendToRest: function (action, value) {
-                if(action === "setActivities") {
+                if(action === "setActivities" || action === "deleteActivities") {
                     // Store ids of changed activities
                     for(var a in value.activities) {
                         this.notSaved.push(value.activities[a].id);
@@ -388,15 +421,35 @@ jQuery(document).ready(function($) {
                     case "getActivities":
                         this.activities = answer.activities;
                     break;
-                    case "addActivity":
-                        // TODO Somehow display correctly saved data, grey out before
-                    break;
                     case "setActivities":
                         // Remove every saved activity from the notSaved array
                         for(var i in answer.settedIds) {
                             var index = this.notSaved.indexOf(answer.settedIds[i]);
                             if(index > -1){
                                 this.notSaved.splice(index, 1);
+                            }
+                        }
+                        this.openSaves--;
+                        if(this.notSaved.length > 0 && this.openSaves === 0) {
+                            console.error("Something went wrong during saving the activities", this.notSaved);
+                            // TODO mark unsaved activities and show retry button if something went wrong
+                        }
+                    break;
+                    case "deleteActivities":
+                        // Remove every deleted activity from the notSaved array and from the activities array
+                        for(var i in answer.deletedIds) {
+                            var index1 = this.notSaved.indexOf(answer.deletedIds[i]);
+                            if(index1 > -1){
+                                this.notSaved.splice(index1, 1);
+                            }
+                            var index2 = -1;
+                            for(var a in this.activities) {
+                                if(this.activities[a].id === answer.deletedIds[i]) {
+                                    index2 = a;
+                                }
+                            }
+                            if(index2 > -1){
+                                this.activities.splice(index2, 1);
                             }
                         }
                         this.openSaves--;

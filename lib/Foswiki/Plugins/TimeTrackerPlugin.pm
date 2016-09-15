@@ -124,6 +124,16 @@ sub restSave {
             }
             $answer->{settedIds} = \@updated;
         }
+        case "deleteActivities" {
+            # Update or create every activity in the activities array
+            my @updated = ();
+            my @activities = @{$value->{activities}}; # @{...} is for getting the array itself instead of a reference to the array
+            foreach my $act (@activities) {
+                $meta->remove('TIME', $act->{id});
+                push(@updated, $act->{id});
+            }
+            $answer->{deletedIds} = \@updated;
+        }
     }
 
 

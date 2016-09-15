@@ -3,16 +3,19 @@
 }
 
 #timeTracker form {
-    display: table;
+    display: inline-block;
     background-color: #a1bedd;
     padding: 5px 20px;
     border-spacing: 0px 10px;
 }
+#timeTracker form div {
+    display: table;
+}
 #timeTracker form p {
     display: table-row;
 }
-#timeTracker form label,
-#timeTracker form input {
+#timeTracker form p label,
+#timeTracker form p input {
     display: table-cell;
 }
 #timeTracker form input[type="checkbox"] {
@@ -35,7 +38,7 @@
     background-color: #EEEEEE;
 }
 
-#timeTracker .timeSpans div {
+#timeTracker .timeSpans > td > div {
     float: left;
     width: 30%;
 }
@@ -57,6 +60,14 @@
 
 #timeTracker button {
     padding: 5px 25px 5px 15px;
+}
+
+#timeTracker #total {
+    max-width: 1200px;
+}
+#timeTracker #total div {
+    float: right;
+    padding-left: 20px;
 }
 
 /*
