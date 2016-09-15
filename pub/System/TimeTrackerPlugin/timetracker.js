@@ -208,7 +208,8 @@ var ActivityComponent = Vue.extend({
         },
         // Wrapper to access moment() in inline statements
         showTime: function (ms) {
-            return moment(ms).format("HH:MM");
+            console.log(ms, moment(ms).format("hh:mm"));
+            return moment(ms).format("hh:mm");
         },
         showDuration: function(ms) {
             var dur = moment.duration(ms);
@@ -343,7 +344,7 @@ jQuery(document).ready(function($) {
                             running: running,
                             totalms: totalms,
                             totalhours: dur.asHours().toFixed(4), // Decimal hours for Redmine
-                            // Store each part of HH:MM:SS with a leading 0 if needed
+                            // Store each part of hh:mm:ss with a leading 0 if needed
                             hours: dur.hours() < 10 ? "0"+dur.hours() : dur.hours(),
                             minutes: dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes(),
                             seconds: dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds()
@@ -354,7 +355,7 @@ jQuery(document).ready(function($) {
                 res[0] = {
                     totalms: todaysTotal,
                     totalhours: dur.asHours().toFixed(4), // Decimal hours for Redmine
-                    // Store each part of HH:MM:SS with a leading 0 if needed
+                    // Store each part of hh:mm:ss with a leading 0 if needed
                     hours: dur.hours() < 10 ? "0"+dur.hours() : dur.hours(),
                     minutes: dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes(),
                     seconds: dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds()
