@@ -1,16 +1,62 @@
-form {
-    display: table;
-}
-p {
-    display: table-row;
-}
-label,
-input {
-    display: table-cell;
+#timeTracker .hidden {
+    display: none;
 }
 
-form input[type="checkbox"] {
+#timeTracker form {
+    display: table;
+    background-color: #a1bedd;
+    padding: 5px 20px;
+    border-spacing: 0px 10px;
+}
+#timeTracker form p {
+    display: table-row;
+}
+#timeTracker form label,
+#timeTracker form input {
+    display: table-cell;
+}
+#timeTracker form input[type="checkbox"] {
     margin-left: 0px;
+}
+
+
+#timeTracker table {
+    width: 100%;
+    max-width: 1200px;
+    border-collapse: separate;
+    border-spacing: 0px 10px;
+}
+#timeTracker th {
+    text-align: left;
+    padding: 15px 3px;
+    background-color: #6494c9;
+}
+#timeTracker tr:not(.timeSpans) {
+    background-color: #EEEEEE;
+}
+
+#timeTracker .timeSpans div {
+    float: left;
+    width: 30%;
+}
+#timeTracker .timeSpans .edit {
+    width: 40%;
+    margin-left: 20%;
+}
+#timeTracker .timeSpans table {
+    max-width: 400px;
+    border-collapse: collapse;
+}
+#timeTracker .timeSpans tr:nth-child(2n) {
+    background-color: white;
+}
+#timeTracker .timeSpans table th,
+#timeTracker .timeSpans table td {
+    text-align: center;
+}
+
+#timeTracker button {
+    padding: 5px 25px 5px 15px;
 }
 
 /*

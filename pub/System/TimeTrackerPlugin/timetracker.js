@@ -79,20 +79,59 @@ var stopOtherTimersOnPlay = true;
 var allowEmptyActivity = false;
 // Template for one activity
 var ActivityComponent = Vue.extend({
-    props: ['activity', 'index', 'totaltime'],
+    props: ['activity', 'index', 'totaltime', 'currentms'],
+    data: function () {
+        return {
+            edit: {
+                "ticket": this.activity.ticket.subject,
+                "type": this.activity.type.name,
+                "comment": this.activity.comment.text,
+                "sendComment": this.activity.comment.sendToRedmine
+            }
+        }
+    },
     template:
-        '<tr>'+
+        '<tr @click="toggleDetails()">'+ // TODO: Prevent this upon ticking the comment checkbox and upon play/pause
             '<td>{{ activity.project.name }}</td>'+
             '<td>{{ activity.ticket.subject }}</td>'+
             '<td>{{ activity.type.name }}</td>'+
             '<td>{{ activity.comment.text }}</td>'+
-            '<td>Redmine: TODO Update<br/>'+
-                '<label for="commentCheckBox{{ activity.id }}">Include comment: </label><input type="checkbox" id="commentCheckBox{{ activity.id }}" v-model="activity.comment.sendToRedmine"/>'+
+            '<td>'+
+                '<p>Redmine: TODO Update</p>'+
+                '<p><label for="commentCheckBox{{ activity.id }}">Include comment: </label><input type="checkbox" id="commentCheckBox{{ activity.id }}" v-model="activity.comment.sendToRedmine" disabled/></p>'+
             '</td>'+
             '<td>{{ totaltime.hours }}:{{ totaltime.minutes }}:{{ totaltime.seconds }}<br/>{{ totaltime.totalhours }}</td>'+
             '<td>'+
                 // Depending on wether theres a running timer this button is either a play or a stop button
-                '<button :class="totaltime.running ? \'fa fa-pause\' : \'fa fa-play\'" @click="totaltime.running ? stop() : start()"></button>'+
+                '<button :class="totaltime.running ? \'fa fa-fw fa-lg fa-pause\' : \'fa fa-fw fa-lg fa-play\'" @click.stop="totaltime.running ? stop() : start()"></button>'+
+            '</td>'+
+        '</tr>'+
+        '<tr class="timeSpans hidden">'+
+            '<td colspan="7">'+
+                '<div class="edit">'+
+                    '<form @submit.prevent="saveEdit()">'+
+                        '<p><label for="ticket">Ticket</label><input type="text" name="ticket" id="ticket" v-model="edit.ticket"><br/></p>'+
+                        '<p><label for="type">Type</label><select name="type" id="type" v-model="edit.type"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select><br/></p>'+
+                        '<p><label for="comment">Comment</label><input type="text" name="comment" id="comment" v-model="edit.comment"></p>'+
+                        '<p><label for="sendComment">Send Comment</label><input type="checkbox" name="sendComment" id="sendComment" v-model="edit.sendComment"></p>'+
+                        '<p><input type="submit" value="Save Edit"></p>'+
+                    '</form>'+
+                '</div>'+
+                '<div>'+
+                    '<table>'+
+                        '<thead>'+
+                            '<tr><th>From</th><th></th><th>To</th><th>Duration</th></tr>'+
+                        '</thead>'+
+                        '<tbody>'+
+                            '<tr v-for="timeSpan in activity.timeSpans">'+
+                                '<td>{{ showTime(timeSpan.startTime) }}</td>'+
+                                '<td>-</td>'+
+                                '<td>{{ timeSpan.endTime > 0 ? showTime(timeSpan.endTime) : "running" }}</td>'+
+                                '<td>{{ showDuration(timeSpan.endTime > 0 ? (timeSpan.endTime - timeSpan.startTime) : (currentms - timeSpan.startTime))}}</td>'+
+                            '</tr>'+
+                        '</tbody>'+
+                    '</table>'+
+                '</div>'+
             '</td>'+
         '</tr>',
     methods: {
@@ -120,13 +159,52 @@ var ActivityComponent = Vue.extend({
                 }
             }
             this.$root.sendToRest("setActivities", {activities: [this.activity]});
+        },
+        // Save the edited data to the activity
+        saveEdit: function () {
+            if(this.edit.ticket !== "" || this.edit.type !== "" || this.edit.comment !== "" || allowEmptyActivity) { // Prevent empty activity unless setted otherwise
+                this.activity = {
+                    "id": this.activity.id,
+                    "project": this.activity.project, // TODO
+                    "ticket": { // TODO
+                        "id": this.activity.ticket.id,
+                        "subject": this.edit.ticket
+                    },
+                    "type": {
+                        "id": this.activity.type.id, // TODO
+                        "name": this.edit.type
+                    },
+                    "comment": {
+                        "sendToRedmine": this.edit.sendComment,
+                        "text": this.edit.comment
+                    },
+                    "timeSpans": this.activity.timeSpans
+                };
+                this.$root.sendToRest("setActivities", {activities: [this.activity]});
+                this.toggleDetails();
+            }
+        },
+        // This toggles the display of the detailed view of an activity
+        toggleDetails: function () {
+            this.$el.nextElementSibling.nextElementSibling.classList.toggle("hidden");
+        },
+        // Wrapper to access moment() in inline statements
+        showTime: function (ms) {
+            return moment(ms).format("HH:MM");
+        },
+        showDuration: function(ms) {
+            var dur = moment.duration(ms);
+            var hours = dur.hours() < 10 ? "0"+dur.hours() : dur.hours();
+            var minutes = dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes();
+            var seconds = dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds();
+            return hours+":"+minutes+":"+seconds;
         }
     }
 });
 
 // Template for the whole table listing the activities
 var ActivityTableComponent = Vue.extend({
-    props: ['activities', 'totaltimes'],
+    props: ['activities', 'totaltimes', 'currentms'],
     template:
         '<div id="activities">'+
             '<table>'+
@@ -135,7 +213,7 @@ var ActivityTableComponent = Vue.extend({
                 '</thead>'+
                 '<tbody>'+
                     // Add a table row for each activity and apply the vue-activity template defined in ActivityComponent, needed values are passed with :val="val" attribute in parent and props: ['val'] entry in child
-                    '<tr is="vue-activity" v-for="activity in activities" :activity="activity" :index="$index" :totaltime="totaltimes[activity.id]"></tr>'+
+                    '<tr is="vue-activity" v-for="activity in activities" :activity="activity" :index="$index" :totaltime="totaltimes[activity.id]" :currentms="currentms"></tr>'+
                 '</tbody>'+
             '</table>'+
         '</div>',
@@ -233,7 +311,7 @@ jQuery(document).ready(function($) {
                         res[this.activities[a].id] = {
                             running: running,
                             totalms: totalms,
-                            totalhours: dur.asHours(), // Decimal hours for Redmine
+                            totalhours: dur.asHours().toFixed(4), // Decimal hours for Redmine
                             // Store each part of HH:MM:SS with a leading 0 if needed
                             hours: dur.hours() < 10 ? "0"+dur.hours() : dur.hours(),
                             minutes: dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes(),
