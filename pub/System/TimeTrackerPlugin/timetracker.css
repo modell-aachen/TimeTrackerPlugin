@@ -37,6 +37,18 @@
 #timeTracker tr:not(.timeSpans) {
     background-color: #EEEEEE;
 }
+#timeTracker tr.booked-manually {
+    background-color: #00cccc;
+}
+#timeTracker tr.booked-redmine {
+    background-color: #00cc66;
+}
+#timeTracker span.booked-redmine {
+    background-color: white;
+    padding: 7px 15px;
+    border-radius: 5px;
+    color: #24a866;
+}
 #timeTracker .errored,
 #timeTracker #errorMessage {
     background-color: #FF4444 !important;
@@ -55,6 +67,7 @@
 #timeTracker .timeSpans .edit {
     width: 40%;
     margin-left: 20%;
+    min-height: 1px;
 }
 #timeTracker .timeSpans table {
     max-width: 400px;

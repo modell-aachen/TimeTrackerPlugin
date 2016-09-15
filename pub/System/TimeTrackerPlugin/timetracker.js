@@ -94,24 +94,29 @@ var ActivityComponent = Vue.extend({
         }
     },
     template:
-        '<tr id="activity{{ activity.id }}" @click="toggleDetails()">'+
+        '<tr id="activity{{ activity.id }}" @click="toggleDetails()" :class="{\'booked-redmine\': activity.booked.inRedmine, \'booked-manually\': activity.booked.manually}">'+
             '<td>{{ activity.project.name }}</td>'+
             '<td>{{ activity.ticket.subject }}</td>'+
             '<td>{{ activity.type.name }}</td>'+
             '<td>{{ activity.comment.text }}</td>'+
             '<td>'+
-                '<p>Redmine: TODO Update</p>'+
+                '<p v-if="activity.booked.inRedmine"><span class="label booked-redmine">Booked in Redmine</span></p>'+ // TODO Redmine Integration
+                '<p v-else>'+
+                    '<button @click.stop="bookInRedmine()">Book in Redmine</button>'+
+                    '<button v-if="activity.booked.manually" @click.stop="unbook()">Unbook</button>'+
+                    '<button v-else @click.stop="book()">Book</button>'+
+                '</p>'+
                 '<p><label for="commentCheckBox{{ activity.id }}">Include comment: </label><input type="checkbox" id="commentCheckBox{{ activity.id }}" v-model="activity.comment.sendToRedmine" disabled/></p>'+
             '</td>'+
             '<td>{{ totaltime.hours }}:{{ totaltime.minutes }}:{{ totaltime.seconds }}<br/>{{ totaltime.totalhours }}h</td>'+
             '<td>'+
                 // Depending on wether theres a running timer this button is either a play or a stop button
-                '<button :class="totaltime.running ? \'fa fa-fw fa-lg fa-pause\' : \'fa fa-fw fa-lg fa-play\'" @click.stop="totaltime.running ? stop() : start()"></button>'+
+                '<button v-if="!activity.booked.inRedmine && !activity.booked.manually" :class="totaltime.running ? \'fa fa-fw fa-lg fa-pause\' : \'fa fa-fw fa-lg fa-play\'" @click.stop="totaltime.running ? stop() : start()"></button>'+
             '</td>'+
         '</tr>'+
         '<tr class="timeSpans hidden">'+
             '<td colspan="7">'+
-                '<div class="edit">'+
+                '<div v-if="!activity.booked.inRedmine && !activity.booked.manually" class="edit">'+
                     '<form @submit.prevent="saveEdit()">'+
                         '<div>'+
                             '<p><label for="ticket">Ticket</label><input type="text" name="ticket" id="ticket" v-model="edit.ticket"><br/></p>'+
@@ -122,6 +127,7 @@ var ActivityComponent = Vue.extend({
                         '<button type="submit">Save Edit</button><button @click.stop.prevent="cancelEdit()">Cancel Edit</button><button @click.stop.prevent="delete()">Delete Activity</button>'+
                     '</form>'+
                 '</div>'+
+                '<div v-else class="edit"></div>'+
                 '<div>'+
                     '<table>'+
                         '<thead>'+
@@ -183,6 +189,7 @@ var ActivityComponent = Vue.extend({
                         "sendToRedmine": this.edit.sendComment,
                         "text": this.edit.comment
                     },
+                    "booked": this.activity.booked,
                     "timeSpans": this.activity.timeSpans
                 };
                 this.$root.sendToRest("setActivities", {activities: [this.activity]});
@@ -202,13 +209,28 @@ var ActivityComponent = Vue.extend({
         delete: function () {
             this.$root.sendToRest("deleteActivities", {activities: [this.activity]});
         },
+        // Book in Redmine
+        bookInRedmine: function () {
+            this.activity.booked.inRedmine = true; // TODO Send to Redmine and update status upon response
+            this.stop();
+            // sendToRest is done in stop()
+        },
+        // Mark as booked manually
+        book: function () {
+            this.activity.booked.manually = true;
+            this.stop();
+            // sendToRest is done in stop()
+        },
+        unbook: function () {
+            this.activity.booked.manually = false;
+            this.$root.sendToRest("setActivities", {activities: [this.activity]});
+        },
         // This toggles the display of the detailed view of an activity
         toggleDetails: function () {
             this.$el.nextElementSibling.nextElementSibling.classList.toggle("hidden");
         },
         // Wrapper to access moment() in inline statements
         showTime: function (ms) {
-            console.log(ms, moment(ms).format("hh:mm"));
             return moment(ms).format("hh:mm");
         },
         showDuration: function(ms) {
@@ -290,6 +312,10 @@ var AddActivityComponent = Vue.extend({
                     "comment": {
                         "sendToRedmine": this.form.sendComment,
                         "text": this.form.comment
+                    },
+                    "booked": {
+                        "inRedmine": false,
+                        "manually": false
                     },
                     "timeSpans": [
                         {
@@ -527,7 +553,7 @@ jQuery(document).ready(function($) {
 
 
 /* Data format */
-// Additionally "form" and "currentms" are needed for Vue computations
+// Additionally "form", "saving" and "currentms" are needed for Vue computations
 var dataFormat = {
     "activities": [
         {
@@ -547,6 +573,10 @@ var dataFormat = {
             "comment": {
                 "sendToRedmine": "<:Boolean>",
                 "text": "<:String>"
+            },
+            "booked": {
+                "inRedmine": "<:Boolean>",
+                "manually": "<:Boolean>"
             },
             "timeSpans": [
                 {
