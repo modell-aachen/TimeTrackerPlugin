@@ -37,6 +37,16 @@
 #timeTracker tr:not(.timeSpans) {
     background-color: #EEEEEE;
 }
+#timeTracker .errored,
+#timeTracker #errorMessage {
+    background-color: #FF4444 !important;
+}
+#timeTracker #errorMessage {
+    max-width: 1160px;
+    padding: 20px;
+    font-size: 150%;
+    line-height: 150%;
+}
 
 #timeTracker .timeSpans > td > div {
     float: left;

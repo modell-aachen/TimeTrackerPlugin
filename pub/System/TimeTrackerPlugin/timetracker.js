@@ -7,8 +7,11 @@ var testData = {
         "sendComment": true
     },
     "currentms": 0, // = moment().valueOf(), updated every second for Vue calculations
-    "notSaved": [], // Storing ids of every activity that is not exactly like this at the server
-    "openSaves": 0, // Number of save operations to be handled from rest
+    "saving": {
+        "notSaved": [], // Storing ids of every activity that is not exactly like this at the server
+        "openSaves": 0, // Number of save operations to be handled from rest
+        "errored": false // Has something went wrong and was not correctly saved
+    },
     "activities": []
 };
 /*
@@ -91,7 +94,7 @@ var ActivityComponent = Vue.extend({
         }
     },
     template:
-        '<tr @click="toggleDetails()">'+ // TODO: Prevent this upon ticking the comment checkbox and upon play/pause
+        '<tr id="activity{{ activity.id }}" @click="toggleDetails()">'+
             '<td>{{ activity.project.name }}</td>'+
             '<td>{{ activity.ticket.subject }}</td>'+
             '<td>{{ activity.type.name }}</td>'+
@@ -219,9 +222,13 @@ var ActivityComponent = Vue.extend({
 
 // Template for the whole table listing the activities
 var ActivityTableComponent = Vue.extend({
-    props: ['activities', 'totaltimes', 'currentms'],
+    props: ['activities', 'totaltimes', 'saving', 'currentms'],
     template:
         '<div id="activities">'+
+            '<div v-if="saving.errored" id="errorMessage">Something went wrong during saving the data in the topics meta data. '+
+                'Please have a look at the red marked activities and redo any edits/deletions. '+
+                'Alternatively you can reload the page to discard every unsaved changes and display the currently saved status.'+
+            '</div>'+
             '<table>'+
                 '<thead>'+
                     '<tr><th>Project</th><th>Ticket</th><th>Type</th><th>Comment</th><th>Status</th><th>Total Time</th><th>Run</th></tr>'+
@@ -254,7 +261,7 @@ var AddActivityComponent = Vue.extend({
                     '<p><label for="type">Type</label><select name="type" id="type" v-model="form.type"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select><br/></p>'+
                     '<p><label for="comment">Comment</label><input type="text" name="comment" id="comment" v-model="form.comment"></p>'+
                     '<p><label for="sendComment">Send Comment</label><input type="checkbox" name="sendComment" id="sendComment" v-model="form.sendComment"></p>'+
-                    '<p><input type="submit" value="Add Activity"></p>'+
+                    '<p><button type="submit">Add Activity</button></p>'+
                 '</div>'+
             '</form>'+
         '</div>',
@@ -392,10 +399,24 @@ jQuery(document).ready(function($) {
             sendToRest: function (action, value) {
                 if(action === "setActivities" || action === "deleteActivities") {
                     // Store ids of changed activities
-                    for(var a in value.activities) {
-                        this.notSaved.push(value.activities[a].id);
+                    if(!this.saving.errored) {
+                        for(var a in value.activities) {
+                            this.saving.notSaved.push(value.activities[a].id);
+                        }
+                        this.saving.openSaves++;
+                    } else {
+                        // Make sure every now updated activity occurs only once in the notSaved array
+                        for(var a in value.activities) {
+                            var index = this.saving.notSaved.indexOf(value.activities[a].id);
+                            while(index > -1){
+                                this.saving.notSaved.splice(index, 1);
+                                index = this.saving.notSaved.indexOf(value.activities[a].id);
+                            }
+                            this.saving.notSaved.push(value.activities[a].id);
+                        }
+                        // Reset the openSaves
+                        this.saving.openSaves = 1;
                     }
-                    this.openSaves++;
                 }
 
                 var payload = {
@@ -424,23 +445,20 @@ jQuery(document).ready(function($) {
                     case "setActivities":
                         // Remove every saved activity from the notSaved array
                         for(var i in answer.settedIds) {
-                            var index = this.notSaved.indexOf(answer.settedIds[i]);
+                            var index = this.saving.notSaved.indexOf(answer.settedIds[i]);
                             if(index > -1){
-                                this.notSaved.splice(index, 1);
+                                this.saving.notSaved.splice(index, 1);
                             }
                         }
-                        this.openSaves--;
-                        if(this.notSaved.length > 0 && this.openSaves === 0) {
-                            console.error("Something went wrong during saving the activities", this.notSaved);
-                            // TODO mark unsaved activities and show retry button if something went wrong
-                        }
+                        this.saving.openSaves--;
+                        this.checkSaves();
                     break;
                     case "deleteActivities":
                         // Remove every deleted activity from the notSaved array and from the activities array
                         for(var i in answer.deletedIds) {
-                            var index1 = this.notSaved.indexOf(answer.deletedIds[i]);
+                            var index1 = this.saving.notSaved.indexOf(answer.deletedIds[i]);
                             if(index1 > -1){
-                                this.notSaved.splice(index1, 1);
+                                this.saving.notSaved.splice(index1, 1);
                             }
                             var index2 = -1;
                             for(var a in this.activities) {
@@ -452,16 +470,32 @@ jQuery(document).ready(function($) {
                                 this.activities.splice(index2, 1);
                             }
                         }
-                        this.openSaves--;
-                        if(this.notSaved.length > 0 && this.openSaves === 0) {
-                            console.error("Something went wrong during saving the activities", this.notSaved);
-                            // TODO mark unsaved activities and show retry button if something went wrong
-                        }
+                        this.saving.openSaves--;
+                        this.checkSaves();
                     break;
                 }
             },
             restError: function (err) {
                 console.warn("restError", err);
+                this.saving.openSaves--;
+                this.checkSaves();
+            },
+            checkSaves: function () {
+                // Wait if there are open saves
+                if(this.saving.openSaves <= 0) {
+                    if(this.saving.notSaved.length > 0) { // Handle error
+                        console.error(this.saving.errored ? "There are still some unsaved activities: " : "Something went wrong during saving these activities: ", this.saving.notSaved);
+                        this.saving.errored = true;
+                        // Mark exactly the activities listed in the notSaved array
+                        jQuery(".errored").removeClass('errored');
+                        for(var i in this.saving.notSaved) {
+                            jQuery("#activity"+this.saving.notSaved[i]).addClass('errored');
+                        }
+                    } else if(this.saving.errored) { // There was an error, but now everything seems fine
+                        jQuery(".errored").removeClass('errored');
+                        this.saving.errored = false;
+                    }
+                }
             }
         }
     });
