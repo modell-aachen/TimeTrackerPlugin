@@ -50,10 +50,12 @@
     color: #24a866;
 }
 #timeTracker .errored,
-#timeTracker #errorMessage {
+#timeTracker #errorMessage,
+#timeTracker #refusedMessage {
     background-color: #FF4444 !important;
 }
-#timeTracker #errorMessage {
+#timeTracker #errorMessage,
+#timeTracker #refusedMessage {
     max-width: 1160px;
     padding: 20px;
     font-size: 150%;

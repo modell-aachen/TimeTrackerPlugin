@@ -10,7 +10,8 @@ var testData = {
     "saving": {
         "notSaved": [], // Storing ids of every activity that is not exactly like this at the server
         "openSaves": 0, // Number of save operations to be handled from rest
-        "errored": false // Has something went wrong and was not correctly saved
+        "errored": false, // Has something went wrong and was not correctly saved
+        "refused": false // Was saving refused
     },
     "activities": []
 };
@@ -248,7 +249,11 @@ var ActivityTableComponent = Vue.extend({
     props: ['activities', 'totaltimes', 'saving', 'currentms'],
     template:
         '<div id="activities">'+
-            '<div v-if="saving.errored" id="errorMessage">Something went wrong during saving the data in the topics meta data. '+
+            '<div v-if="saving.refused" id="refusedMessage">The Server refused to save the data. '+
+                'Please check if your date and time is correctly set and try again. '+
+                'Red marked activities contain unsaved data.'+
+            '</div>'+
+            '<div v-if="saving.errored && !saving.refused" id="errorMessage">Something went wrong during saving the data in the topics meta data. '+
                 'Please have a look at the red marked activities and redo any edits/deletions. '+
                 'Alternatively you can reload the page to discard every unsaved changes and display the currently saved status.'+
             '</div>'+
@@ -500,6 +505,13 @@ jQuery(document).ready(function($) {
                         this.saving.openSaves--;
                         this.checkSaves();
                     break;
+                    case "refused":
+                        if(answer.cause === "timeDiff") {
+                            this.saving.refused = true;
+                        }
+                        this.saving.openSaves--;
+                        this.checkSaves();
+                    break;
                 }
             },
             restError: function (err) {
@@ -521,6 +533,7 @@ jQuery(document).ready(function($) {
                     } else if(this.saving.errored) { // There was an error, but now everything seems fine
                         jQuery(".errored").removeClass('errored');
                         this.saving.errored = false;
+                        this.saving.refused = false;
                     }
                 }
             }

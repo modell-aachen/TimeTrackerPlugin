@@ -84,7 +84,23 @@ sub restSave {
     my $user = $data->{user};
     my $date = $data->{date};
     my $time = $data->{time};
-    # TODO check if date and time is correct
+
+    # Check if date and time is correct
+    my $serverTime = time() * 1000;
+    if(abs($serverTime - $time) > 60000) {
+        # More than one minute off, so refuse saving
+        my $answer = {
+            'action' => 'refused',
+            'cause' => 'timeDiff',
+            'difference' => abs($serverTime - $time),
+            'serverTime' => $serverTime,
+            'clientTime' => $time
+        };
+        $response->status(200);
+        return to_json($answer);
+    }
+
+    # Correct time, proceed
     my $answer = {
         'action' => $action
     };
