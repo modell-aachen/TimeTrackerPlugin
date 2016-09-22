@@ -84,6 +84,9 @@
 #timeTracker .timeSpans table td {
     text-align: center;
 }
+#timeTracker .timeSpans [type="number"]:invalid {
+    box-shadow: none;
+}
 
 #timeTracker button {
     padding: 5px 25px 5px 15px;

@@ -19,7 +19,8 @@ jQuery(document).ready(function($) {
                     "type": this.activity.type.name,
                     "comment": this.activity.comment.text,
                     "sendComment": this.activity.comment.sendToRedmine
-                }
+                },
+                editingTimeSpans: false // Edit mode for time spans
             }
         },
         template:
@@ -69,7 +70,16 @@ jQuery(document).ready(function($) {
                                 '<tr><th>'+loc('From')+'</th><th></th><th>'+loc('To')+'</th><th>'+loc('Duration')+'</th></tr>'+
                             '</thead>'+
                             '<tbody>'+
-                                '<tr v-for="timeSpan in activity.timeSpans">'+
+                                '<tr v-show="editingTimeSpans" v-for="timeSpan in activity.timeSpans">'+
+                                    '<td><input type="number" v-model="timeSpan.startTime" step="60000" number></td>'+
+                                    '<td>-</td>'+
+                                    '<td>'+
+                                        '<input v-if="timeSpan.endTime > 0" type="number" v-model="timeSpan.endTime" step="60000" number>'+
+                                        '<input v-else value="running" disabled>'+
+                                    '</td>'+
+                                    '<td>{{ showDuration(timeSpan.endTime > 0 ? (timeSpan.endTime - timeSpan.startTime) : (currentms - timeSpan.startTime))}}</td>'+
+                                '</tr>'+
+                                '<tr v-show="!editingTimeSpans" v-for="timeSpan in activity.timeSpans">'+
                                     '<td>{{ showTime(timeSpan.startTime) }}</td>'+
                                     '<td>-</td>'+
                                     '<td>{{ timeSpan.endTime > 0 ? showTime(timeSpan.endTime) : "running" }}</td>'+
@@ -77,6 +87,9 @@ jQuery(document).ready(function($) {
                                 '</tr>'+
                             '</tbody>'+
                         '</table>'+
+                        '<input v-show="!editingTimeSpans" type="submit" class="foswikiButton" @click.stop.prevent="editTimeSpans()" value="'+loc('Edit timespans')+'">'+
+                        '<input v-show="editingTimeSpans" type="submit" class="foswikiSubmit" @click.stop.prevent="saveTimeSpans()" value="'+loc('Save edit')+'">'+
+                        '<input v-show="editingTimeSpans" type="submit" class="foswikiButtonCancel" @click.stop.prevent="cancelTimeSpans()" value="'+loc('Cancel edit')+'">'+
                     '</div>'+
                 '</td>'+
             '</tr>',
@@ -163,6 +176,18 @@ jQuery(document).ready(function($) {
             // This toggles the display of the detailed view of an activity
             toggleDetails: function () {
                 this.$el.nextElementSibling.nextElementSibling.classList.toggle("hidden");
+            },
+            // Editing the timeSpans
+            editTimeSpans: function () {
+                this.editingTimeSpans = true;
+            },
+            saveTimeSpans: function () {
+                this.$root.sendToRest("setActivities", {activities: [this.activity]});
+                this.editingTimeSpans = false;
+            },
+            cancelTimeSpans: function () {
+                this.$root.sendToRest("getActivities", {});
+                this.editingTimeSpans = false;
             },
             // Wrapper to access moment() in inline statements
             showTime: function (ms) {

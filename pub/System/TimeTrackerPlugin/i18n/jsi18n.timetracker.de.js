@@ -7,6 +7,7 @@ jsi18n.add('timetracker', {
     "Comment": "Kommentar",
     "Duration": "Dauer",
     "Delete activity": "Aktivit&auml;t l&ouml;schen",
+    "Edit timespans": "Zeitspannen bearbeiten",
     "From": "Von",
     "Including comment": "Einschlie&szlig;lich Kommentar",
     "Project": "Projekt",
