@@ -1,3 +1,4 @@
+%META:TOPICINFO{author="BaseUserMapping_333" comment="" date="1474537504" format="1.1" version="3"}%
 %VUE%
 %JQREQUIRE{"jqp::moment"}%
 %ADDTOZONE{
@@ -10,6 +11,7 @@
     text="<script type=\"text/javascript\" src=\"%PUBURL%/System/TimeTrackerPlugin/timetracker.js\">"
     requires="JQUERYPLUGIN::FOSWIKI::PREFERENCES,VUEJSPLUGIN"
 }%
+%JSI18N{id="timetracker" folder="System/TimeTrackerPlugin/i18n"}%
 %ADDTOZONE{
     "head"
     id="TIMETRACKER::CSS"

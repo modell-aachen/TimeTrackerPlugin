@@ -4,4 +4,4 @@ data/_apps/TimeTracker/WebHome.txt 0644
 lib/Foswiki/Plugins/TimeTrackerPlugin.pm 0444
 pub/System/TimeTrackerPlugin/timetracker.css 0644
 pub/System/TimeTrackerPlugin/timetracker.js 0644
-locale/TimeTrackerPlugin/de.po 0444
+pub/System/TimeTrackerPlugin/i18n/jsi18n.timetracker.de.js 0644
