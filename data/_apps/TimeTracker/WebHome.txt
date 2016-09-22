@@ -4,6 +4,17 @@
     "head"
     text="<link rel=\"stylesheet\" href=\"%PUBURL%/System/FontAwesomeContrib/css/font-awesome.min.css\"/>"
 }%
+%ADDTOZONE{
+    "script"
+    id="TIMETRACKER::JS"
+    text="<script type=\"text/javascript\" src=\"%PUBURL%/System/TimeTrackerPlugin/timetracker.js\">"
+    requires="JQUERYPLUGIN::FOSWIKI::PREFERENCES,VUEJSPLUGIN"
+}%
+%ADDTOZONE{
+    "head"
+    id="TIMETRACKER::CSS"
+    text="<link rel=\"stylesheet\" href=\"%PUBURL%/System/TimeTrackerPlugin/timetracker.css\">"
+}%
 <div id="timeTracker">
     <vue-activity-table :activities="activities" :totaltimes="totaltimes" :saving="saving" :currentms="currentms"></vue-activity-table>
     <vue-add-activity :activities="activities" :form="form"></vue-add-activity>

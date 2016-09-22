@@ -103,11 +103,11 @@ var ActivityComponent = Vue.extend({
             '<td>'+
                 '<p v-if="activity.booked.inRedmine"><span class="label booked-redmine">Booked in Redmine</span></p>'+ // TODO Redmine Integration
                 '<p v-else>'+
-                    '<button @click.stop="bookInRedmine()">Book in Redmine</button>'+
-                    '<button v-if="activity.booked.manually" @click.stop="unbook()">Unbook</button>'+
-                    '<button v-else @click.stop="book()">Book</button>'+
+                    '<input type="submit" class="foswikiSubmit" @click.stop.prevent="bookInRedmine()" value="Book in Redmine">'+
+                    '<input v-if="activity.booked.manually" input type="submit" class="foswikiSubmit" @click.stop.prevent="unbook()" value="Unbook">'+
+                    '<input v-else @click.stop="book()" type="submit" class="foswikiSubmit" value="Book">'+
                 '</p>'+
-                '<p><label for="commentCheckBox{{ activity.id }}">Include comment: </label><input type="checkbox" id="commentCheckBox{{ activity.id }}" v-model="activity.comment.sendToRedmine" disabled/></p>'+
+                '<p><span>Include comment: </span><input type="checkbox" v-model="activity.comment.sendToRedmine" disabled/></p>'+
             '</td>'+
             '<td>{{ totaltime.hours }}:{{ totaltime.minutes }}:{{ totaltime.seconds }}<br/>{{ totaltime.totalhours }}h</td>'+
             '<td>'+
@@ -119,13 +119,13 @@ var ActivityComponent = Vue.extend({
             '<td colspan="7">'+
                 '<div v-if="!activity.booked.inRedmine && !activity.booked.manually" class="edit">'+
                     '<form @submit.prevent="saveEdit()">'+
-                        '<div>'+
-                            '<p><label for="ticket">Ticket</label><input type="text" name="ticket" id="ticket" v-model="edit.ticket"><br/></p>'+
-                            '<p><label for="type">Type</label><select name="type" id="type" v-model="edit.type"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select><br/></p>'+
-                            '<p><label for="comment">Comment</label><input type="text" name="comment" id="comment" v-model="edit.comment"></p>'+
-                            '<p><label for="sendComment">Send Comment</label><input type="checkbox" name="sendComment" id="sendComment" v-model="edit.sendComment"></p>'+
+                        '<div class="table">'+
+                            '<label class="row"><span class="cell">Ticket</span><input type="text" class="cell" id="ticket" v-model="edit.ticket"></label>'+
+                            '<label class="row"><span class="cell">Type</span><select class="cell" id="type" v-model="edit.type"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></label>'+
+                            '<label class="row"><span class="cell">Comment</span><input type="text" class="cell" id="comment" v-model="edit.comment"></label>'+
+                            '<label class="row"><span class="cell">Send Comment</span><input type="checkbox" class="cell" id="sendComment" v-model="edit.sendComment"></label>'+
+                            '<div class="row"><input type="submit" class="foswikiSubmit cell" value="Save Edit"><div class="cell"><input type="submit" class="foswikiButton" @click.stop.prevent="cancelEdit()" value="Cancel Edit"><input type="submit" class="foswikiButtonCancel" @click.stop.prevent="delete()" value="Delete Activity"></div></div>'+
                         '</div>'+
-                        '<button type="submit">Save Edit</button><button @click.stop.prevent="cancelEdit()">Cancel Edit</button><button @click.stop.prevent="delete()">Delete Activity</button>'+
                     '</form>'+
                 '</div>'+
                 '<div v-else class="edit"></div>'+
@@ -284,12 +284,12 @@ var AddActivityComponent = Vue.extend({
     template:
         '<div id="addActivity">'+
             '<form @submit.prevent="addActivity()">'+
-                '<div>'+
-                    '<p><label for="ticket">Ticket</label><input type="text" name="ticket" id="ticket" v-model="form.ticket"><br/></p>'+
-                    '<p><label for="type">Type</label><select name="type" id="type" v-model="form.type"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select><br/></p>'+
-                    '<p><label for="comment">Comment</label><input type="text" name="comment" id="comment" v-model="form.comment"></p>'+
-                    '<p><label for="sendComment">Send Comment</label><input type="checkbox" name="sendComment" id="sendComment" v-model="form.sendComment"></p>'+
-                    '<p><button type="submit">Add Activity</button></p>'+
+                '<div class="table">'+
+                    '<label class="row"><span class="cell">Ticket</span><input type="text" class="cell" v-model="form.ticket" id="ticket"></label>'+
+                    '<label class="row"><span class="cell">Type</span><select class="cell" v-model="form.type" id="type"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></label>'+
+                    '<label class="row"><span class="cell">Comment</span><input type="text" class="cell" v-model="form.comment" id="comment"></label>'+
+                    '<label class="row"><span class="cell">Send Comment</span><input type="checkbox" class="cell" v-model="form.sendComment"></label>'+
+                    '<p class="row"><input type="submit" class="cell foswikiSubmit" value="Add Activity"></p>'+
                 '</div>'+
             '</form>'+
         '</div>',

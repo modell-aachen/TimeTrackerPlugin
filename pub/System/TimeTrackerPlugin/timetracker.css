@@ -8,15 +8,17 @@
     padding: 5px 20px;
     border-spacing: 0px 10px;
 }
-#timeTracker form div {
+#timeTracker .table {
     display: table;
 }
-#timeTracker form p {
+#timeTracker .row {
     display: table-row;
 }
-#timeTracker form p label,
-#timeTracker form p input {
+#timeTracker .cell {
     display: table-cell;
+}
+#timeTracker span.cell {
+    padding-right: 10px;
 }
 #timeTracker form input[type="checkbox"] {
     margin-left: 0px;

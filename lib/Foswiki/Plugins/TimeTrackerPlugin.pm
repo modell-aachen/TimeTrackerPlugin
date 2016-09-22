@@ -51,17 +51,6 @@ sub initPlugin {
         return 0;
     }
 
-    my $script = <<SCRIPT;
-    <script type="text/javascript" src="%PUBURL%/System/TimeTrackerPlugin/timetracker.js"></script>
-SCRIPT
-
-    my $style = <<STYLE;
-<link rel="stylesheet" href="%PUBURL%/System/TimeTrackerPlugin/timetracker.css" />
-STYLE
-
-    Foswiki::Func::addToZone('head', 'TIMETRACKER::CSS', $style);
-    Foswiki::Func::addToZone('script', 'TIMETRACKER::JS', $script, 'JQUERYPLUGIN::FOSWIKI::PREFERENCES,VUEJSPLUGIN');
-
 
     my %opts = (authenticate => 1, validate => 0, http_allow => "POST");
     Foswiki::Func::registerRESTHandler('save', \&restSave, %opts);
