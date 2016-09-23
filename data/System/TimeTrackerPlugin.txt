@@ -1,43 +1,29 @@
 ---+!! !TimeTrackerPlugin
-<!--
-One line description, required for extensions repository catalog.
-BuildContrib will fill in the SHORTDESCRIPTION with the value of
-$SHORTDESCRIPTION from the .pm module, or you can redefine it here if you
-prefer.
-   * Set SHORTDESCRIPTION = A little time tracker
--->
 %SHORTDESCRIPTION%
-
-%TOC%
 
 ---++ Usage
 
----++ Examples
+You can use the TimeTrackerPlugin to record activities.
 
-%TIMETRACKER{"Hello"}%
+Each activity can have an attached ticket and project, can be commented and stores the time spent on this activity in time spans, which are set upon the play / pause button.
+
+An activity can be manually marked as booked or unbooken and can be booked in Redmine once.
+
+An unbooked activity can be edited, including the time spans and a general time correction for this activity.
+
 
 ---++ Installation Instructions
 
-You do not need to install anything in the browser to use this extension. The following instructions are for the administrator who installs the extension on the server.
-
-Open configure, and open the "Extensions" section. Use "Find More Extensions" to get a list of available extensions. Select "Install".
-
-If you have any problems, or if the extension isn't available in =configure=, then you can still install manually from the command-line. See http://foswiki.org/Support/ManuallyInstallingExtensions for more help.
-
+You do not need to install anything in the browser to use this extension.
 
 ---++ Info
 
-Many thanks to the following sponsors for supporting this work:
-   * Acknowledge any sponsors here
-
-|  Author(s): | |
-|  Copyright: | &copy; |
+|  Author(s): | Aaron Grabowy |
+|  Copyright: | &copy; Modell Aachen !GmbH |
 |  License: | [[http://www.gnu.org/licenses/gpl.html][GPL (Gnu General Public License)]] |
 |  Release: | 1.0 |
 |  Version: | 1.0 |
-|  Change History: | <!-- versions below in reverse order -->&nbsp; |
-|  Dependencies: | None |
-|  Home page: | http://foswiki.org/bin/view/Extensions/TimeTrackerPlugin |
-|  Support: | http://foswiki.org/bin/view/Support/TimeTrackerPlugin |
+|  Home page: | http://www.modell-aachen.de |
+|  Support: | http://www.modell-aachen.de |
 
 <!-- Do _not_ attempt to edit this topic; it is auto-generated. -->

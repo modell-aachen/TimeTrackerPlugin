@@ -1,23 +1,4 @@
-%META:TOPICINFO{author="BaseUserMapping_333" comment="" date="1474537504" format="1.1" version="3"}%
-%VUE%
-%JQREQUIRE{"jqp::moment"}%
-%ADDTOZONE{
-    "head"
-    text="<link rel=\"stylesheet\" href=\"%PUBURL%/System/FontAwesomeContrib/css/font-awesome.min.css\"/>"
-}%
-%ADDTOZONE{
-    "script"
-    id="TIMETRACKER::JS"
-    text="<script type=\"text/javascript\" src=\"%PUBURL%/System/TimeTrackerPlugin/timetracker.js\">"
-    requires="JQUERYPLUGIN::FOSWIKI::PREFERENCES,VUEJSPLUGIN"
-}%
-%JSI18N{id="timetracker" folder="System/TimeTrackerPlugin/i18n"}%
-%ADDTOZONE{
-    "head"
-    id="TIMETRACKER::CSS"
-    text="<link rel=\"stylesheet\" href=\"%PUBURL%/System/TimeTrackerPlugin/timetracker.css\">"
-}%
-<div id="timeTracker">
-    <vue-activity-table :activities="activities" :totaltimes="totaltimes" :saving="saving" :currentms="currentms"></vue-activity-table>
-    <vue-add-activity :activities="activities" :form="form"></vue-add-activity>
-</div>
+%META:PREFERENCE{name="ALLOWTOPICCHANGE" title="ALLOWTOPICCHANGE" type="Set" value="AdminUser"}%
+%META:PREFERENCE{name="NOWYSIWYG" title="NOWYSIWYG" type="Set" value="1"}%
+%META:PREFERENCE{name="VIEW_TEMPLATE" title="VIEW_TEMPLATE" type="Set" value="TimeTrackerView"}%
+%META:PREFERENCE{name="TOPICTITLE" title="TOPICTITLE" type="Set" value="Time Tracker"}%

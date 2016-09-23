@@ -95,7 +95,7 @@ jQuery(document).ready(function($) {
                                 '</tr>'+
                             '</tbody>'+
                         '</table>'+
-                        '<input v-show="!editingTimeSpans" type="submit" class="foswikiButton" @click.stop.prevent="editTimeSpans()" value="'+loc('Edit timespans')+'">'+
+                        '<input v-show="!editingTimeSpans && !activity.booked.inRedmine && !activity.booked.manually" type="submit" class="foswikiButton" @click.stop.prevent="editTimeSpans()" value="'+loc('Edit timespans')+'">'+
                         '<input v-show="editingTimeSpans" type="submit" class="foswikiSubmit" @click.stop.prevent="saveTimeSpans()" value="'+loc('Save edit')+'">'+
                         '<input v-show="editingTimeSpans" type="submit" class="foswikiButtonCancel" @click.stop.prevent="cancelTimeSpans()" value="'+loc('Cancel edit')+'">'+
                     '</div>'+

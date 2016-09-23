@@ -1,4 +1,5 @@
 data/System/TimeTrackerPlugin.txt 0644
+data/System/TimeTrackerViewTemplate.txt 0644
 data/_apps/TimeTracker/WebPreferences.txt 0644
 data/_apps/TimeTracker/WebHome.txt 0644
 lib/Foswiki/Plugins/TimeTrackerPlugin.pm 0444
