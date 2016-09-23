@@ -23,6 +23,9 @@
 #timeTracker form input[type="checkbox"] {
     margin-left: 0px;
 }
+#timeTracker input.small {
+    width: 3em;
+}
 
 
 #timeTracker table {
@@ -36,7 +39,7 @@
     padding: 15px 3px;
     background-color: #6494c9;
 }
-#timeTracker tr:not(.timeSpans) {
+#timeTracker tr:not(.details) {
     background-color: #EEEEEE;
 }
 #timeTracker tr.booked-manually {
@@ -64,27 +67,33 @@
     line-height: 150%;
 }
 
-#timeTracker .timeSpans > td > div {
-    float: left;
-    width: 30%;
+#timeTracker .details > td {
+    text-align: center;
 }
-#timeTracker .timeSpans .edit {
-    width: 40%;
-    margin-left: 20%;
+#timeTracker .details > td > div {
+    display: inline-block;
+    width: 30%;
+    margin-left: 10%;
+    vertical-align: top;
+    text-align: left;
+}
+#timeTracker .details .edit {
+    width: initial;
+    margin-left: 0%;
     min-height: 1px;
 }
-#timeTracker .timeSpans table {
+#timeTracker .details table {
     max-width: 400px;
     border-collapse: collapse;
 }
-#timeTracker .timeSpans tr:nth-child(2n) {
+#timeTracker .details tr:nth-child(2n) {
     background-color: white;
 }
-#timeTracker .timeSpans table th,
-#timeTracker .timeSpans table td {
+#timeTracker .details table th,
+#timeTracker .details table td {
     text-align: center;
 }
-#timeTracker .timeSpans [type="number"]:invalid {
+#timeTracker .details [type="number"]:invalid {
     box-shadow: none;
 }
 

@@ -5,6 +5,7 @@ jsi18n.add('timetracker', {
     "Booked in Redmine": "In Redmine gebucht",
     "Cancel edit": "Abbrechen",
     "Comment": "Kommentar",
+    "Correction": "Korrektur",
     "Duration": "Dauer",
     "Delete activity": "Aktivit&auml;t l&ouml;schen",
     "Edit timespans": "Zeitspannen bearbeiten",

@@ -13,15 +13,22 @@ jQuery(document).ready(function($) {
     var ActivityComponent = Vue.extend({
         props: ['activity', 'index', 'totaltime', 'currentms'],
         data: function () {
-            return {
+            var dur = moment.duration(this.activity.correction);
+            var res = {
                 edit: {
                     "ticket": this.activity.ticket.subject,
                     "type": this.activity.type.name,
                     "comment": this.activity.comment.text,
-                    "sendComment": this.activity.comment.sendToRedmine
+                    "sendComment": this.activity.comment.sendToRedmine,
+                    "correction": {
+                        "hours": Math.floor(dur.asHours()),
+                        "minutes": dur.minutes(),
+                        "seconds": dur.seconds()
+                    }
                 },
                 editingTimeSpans: false // Edit mode for time spans
             }
+            return res;
         },
         template:
             '<tr id="activity{{ activity.id }}" @click="toggleDetails()" :class="{\'booked-redmine\': activity.booked.inRedmine, \'booked-manually\': activity.booked.manually}">'+
@@ -44,7 +51,7 @@ jQuery(document).ready(function($) {
                     '<button v-if="!activity.booked.inRedmine && !activity.booked.manually" :class="totaltime.running ? \'fa fa-fw fa-lg fa-pause\' : \'fa fa-fw fa-lg fa-play\'" @click.stop="totaltime.running ? stop() : start()"></button>'+
                 '</td>'+
             '</tr>'+
-            '<tr class="timeSpans hidden">'+
+            '<tr class="details hidden">'+
                 '<td colspan="7">'+
                     '<div v-if="!activity.booked.inRedmine && !activity.booked.manually" class="edit">'+
                         '<form @submit.prevent="saveEdit()">'+
@@ -53,6 +60,7 @@ jQuery(document).ready(function($) {
                                 '<label class="row"><span class="cell">'+loc('Type')+'</span><select class="cell" id="type" v-model="edit.type"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></label>'+
                                 '<label class="row"><span class="cell">'+loc('Comment')+'</span><input type="text" class="cell" id="comment" v-model="edit.comment"></label>'+
                                 '<label class="row"><span class="cell">'+loc('Send comment')+'</span><input type="checkbox" class="cell" id="sendComment" v-model="edit.sendComment"></label>'+
+                                '<label class="row"><span class="cell">'+loc('Correction')+'</span><input type="number" class="small" v-model="edit.correction.hours" number> : <input type="number" class="small" v-model="edit.correction.minutes" number> : <input type="number" class="small" v-model="edit.correction.seconds" number></label>'+
                                 '<div class="row">'+
                                     '<input type="submit" class="foswikiSubmit cell" value="'+loc('Save edit')+'">'+
                                     '<div class="cell">'+
@@ -122,24 +130,12 @@ jQuery(document).ready(function($) {
             // Save the edited data to the activity
             saveEdit: function () {
                 if(this.edit.ticket !== "" || this.edit.type !== "" || this.edit.comment !== "" || allowEmptyActivity) { // Prevent empty activity unless setted otherwise
-                    this.activity = {
-                        "id": this.activity.id,
-                        "project": this.activity.project, // TODO
-                        "ticket": { // TODO
-                            "id": this.activity.ticket.id,
-                            "subject": this.edit.ticket
-                        },
-                        "type": {
-                            "id": this.activity.type.id, // TODO
-                            "name": this.edit.type
-                        },
-                        "comment": {
-                            "sendToRedmine": this.edit.sendComment,
-                            "text": this.edit.comment
-                        },
-                        "booked": this.activity.booked,
-                        "timeSpans": this.activity.timeSpans
-                    };
+                    // Setting this.activity to a new object does not work
+                    this.activity.ticket.subject = this.edit.ticket;
+                    this.activity.type.name = this.edit.type;
+                    this.activity.comment.sendToRedmine = this.edit.sendComment;
+                    this.activity.comment.text = this.edit.comment;
+                    this.activity.correction = ((((this.edit.correction.hours * 60) + this.edit.correction.minutes) * 60) + this.edit.correction.seconds) * 1000;
                     this.$root.sendToRest("setActivities", {activities: [this.activity]});
                     this.toggleDetails();
                 }
@@ -281,6 +277,7 @@ jQuery(document).ready(function($) {
                             "inRedmine": false,
                             "manually": false
                         },
+                        "correction": 0,
                         "timeSpans": [
                             {
                                 "startTime": moment().valueOf(),
@@ -312,7 +309,7 @@ jQuery(document).ready(function($) {
                 var todaysTotal = 0;
                 for(var a in this.activities) {
                     if(this.activities.hasOwnProperty(a)) {
-                        var totalms = 0;
+                        var totalms = this.activities[a].correction || 0;
                         var running = false;
                         // Sum up the ms of each timeSpan
                         for(var i in this.activities[a].timeSpans) {
@@ -545,6 +542,7 @@ var dataFormat = {
                 "inRedmine": "<:Boolean>",
                 "manually": "<:Boolean>"
             },
+            "correction": "<ms:int>",
             "timeSpans": [
                 {
                     "startTime": "<timeStampStart:int>",
