@@ -101,6 +101,11 @@
     padding: 5px 25px 5px 15px;
 }
 
+#timeTracker #addActivity form {
+    float: left;
+    margin-right: 10px;
+}
+
 #timeTracker #total {
     max-width: 1200px;
 }

@@ -54,7 +54,7 @@ sub initPlugin {
 
     my %opts = (authenticate => 1, validate => 0, http_allow => "POST");
     Foswiki::Func::registerRESTHandler('save', \&restSave, %opts);
-    Foswiki::Meta::registerMETA('TIME', many => 1, require => ['activity']);
+    Foswiki::Meta::registerMETA('TIME', many => 1);
 
     return 1;
 }
@@ -94,23 +94,21 @@ sub restSave {
         'action' => $action
     };
 
-    # Foswiki::Meta::registerMETA('TIME', many => 1, require => ['activity']);
-    # Foswiki::Meta::put('TIME', {activity => "asdf"});
-    # $data->{value}{id}
-    # $data->{value}{comment}{sendToRedmine}
-    # Foswiki::Func::writeWarning($data->{action});
-
-
     # Create todays topic if not already existing
     my $todaystopic = "$user"."_"."$date";
     Foswiki::Func::saveTopic($web, $todaystopic, undef, '', {dontlog => 1}) unless Foswiki::Func::topicExists($web, $todaystopic);
     # Get meta and content of storing topic
     my ($meta, $content) = Foswiki::Func::readTopic($web, $todaystopic);
 
+    # Create settings topic if not already existing
+    Foswiki::Func::saveTopic($web, "$user"."_settings", undef, '', {dontlog => 1}) unless Foswiki::Func::topicExists($web, "$user"."_settings");
+    # Get meta and content of storing topic
+    my ($settingsMeta, $settingsContent) = Foswiki::Func::readTopic($web, "$user"."_settings");
+
 
     # Perform action
     switch($action) {
-        case "getActivities" {
+        case "getAll" {
             # Send all stored activities back (in json: array of activity objects)
             my @activities = ();
             my @data = $meta->find('TIME');
@@ -118,8 +116,15 @@ sub restSave {
                 push(@activities, from_json(Foswiki::urlDecode($act->{activity})));
             }
             $answer->{activities} = \@activities;
+            # Send all settings
+            my @settings = ();
+            my @settingsData = $settingsMeta->find('TIME');
+            foreach my $set (@settingsData) {
+                push(@settings, from_json(Foswiki::urlDecode($set->{setting})));
+            }
+            $answer->{settings} = \@settings;
         }
-        case "setActivities" {
+        case "set" {
             # Update or create every activity in the activities array
             my @updated = ();
             my @activities = @{$value->{activities}}; # @{...} is for getting the array itself instead of a reference to the array
@@ -128,6 +133,11 @@ sub restSave {
                 push(@updated, $act->{id});
             }
             $answer->{settedIds} = \@updated;
+            # Settings
+            my @settings = @{$value->{settings}}; # @{...} is for getting the array itself instead of a reference to the array
+            foreach my $set (@settings) {
+                $settingsMeta->putKeyed('TIME', {name => $set->{id}, setting => Foswiki::urlEncode(to_json($set))});
+            }
         }
         case "deleteActivities" {
             # Update or create every activity in the activities array
@@ -146,6 +156,8 @@ sub restSave {
 
 
     # Save and send answer to client
+    $settingsMeta->save();
+    $settingsMeta->finish();
     $meta->save();
     $meta->finish();
     $response->status(200);

@@ -1,6 +1,4 @@
 /* CODE BEGIN */
-var stopOtherTimersOnPlay = true;
-var allowEmptyActivity = false;
 
 // Initialize Vue when the document is ready to be manipulated
 jQuery(document).ready(function($) {
@@ -11,10 +9,10 @@ jQuery(document).ready(function($) {
 
     // Template for one activity
     var ActivityComponent = Vue.extend({
-        props: ['activity', 'index', 'totaltime', 'currentms'],
+        props: ['activity', 'index', 'totaltime', 'currentms', 'settings'],
         data: function () {
             var dur = moment.duration(this.activity.correction);
-            var res = {
+            return {
                 edit: {
                     "ticket": this.activity.ticket.subject,
                     "type": this.activity.type.name,
@@ -28,7 +26,6 @@ jQuery(document).ready(function($) {
                 },
                 editingTimeSpans: false // Edit mode for time spans
             }
-            return res;
         },
         template:
             '<tr id="activity{{ activity.id }}" @click="toggleDetails()" :class="{\'booked-redmine\': activity.booked.inRedmine, \'booked-manually\': activity.booked.manually}">'+
@@ -106,7 +103,7 @@ jQuery(document).ready(function($) {
             start: function () {
                 // Stop every running timer if this setting is activated
                 var updated = [];
-                if(stopOtherTimersOnPlay) {
+                if(this.settings.onlyOneRunning) {
                     updated = this.$root.stopAll();
                 }
                 updated.push(this.activity);
@@ -116,7 +113,7 @@ jQuery(document).ready(function($) {
                     "endTime": 0 // Running timer, so no end
                 });
                 this.$root.update();
-                this.$root.sendToRest("setActivities", {activities: updated});
+                this.$root.sendToRest("set", {activities: updated, settings: []});
             },
             // This stops every running timeSpan for the corresponding activity
             stop: function () {
@@ -125,18 +122,18 @@ jQuery(document).ready(function($) {
                         this.activity.timeSpans[i].endTime = moment().valueOf(); // Stop the timeSpan by settings its endTime
                     }
                 }
-                this.$root.sendToRest("setActivities", {activities: [this.activity]});
+                this.$root.sendToRest("set", {activities: [this.activity], settings: []});
             },
             // Save the edited data to the activity
             saveEdit: function () {
-                if(this.edit.ticket !== "" || this.edit.type !== "" || this.edit.comment !== "" || allowEmptyActivity) { // Prevent empty activity unless setted otherwise
+                if(this.edit.ticket !== "" || this.edit.type !== "" || this.edit.comment !== "" || this.settings.allowEmptyActivity) { // Prevent empty activity unless setted otherwise
                     // Setting this.activity to a new object does not work
                     this.activity.ticket.subject = this.edit.ticket;
                     this.activity.type.name = this.edit.type;
                     this.activity.comment.sendToRedmine = this.edit.sendComment;
                     this.activity.comment.text = this.edit.comment;
                     this.activity.correction = ((((this.edit.correction.hours * 60) + this.edit.correction.minutes) * 60) + this.edit.correction.seconds) * 1000;
-                    this.$root.sendToRest("setActivities", {activities: [this.activity]});
+                    this.$root.sendToRest("set", {activities: [this.activity], settings: []});
                     this.toggleDetails();
                 }
             },
@@ -167,7 +164,7 @@ jQuery(document).ready(function($) {
             },
             unbook: function () {
                 this.activity.booked.manually = false;
-                this.$root.sendToRest("setActivities", {activities: [this.activity]});
+                this.$root.sendToRest("set", {activities: [this.activity], settings: []});
             },
             // This toggles the display of the detailed view of an activity
             toggleDetails: function () {
@@ -178,11 +175,11 @@ jQuery(document).ready(function($) {
                 this.editingTimeSpans = true;
             },
             saveTimeSpans: function () {
-                this.$root.sendToRest("setActivities", {activities: [this.activity]});
+                this.$root.sendToRest("set", {activities: [this.activity], settings: []});
                 this.editingTimeSpans = false;
             },
             cancelTimeSpans: function () {
-                this.$root.sendToRest("getActivities", {});
+                this.$root.sendToRest("getAll", {});
                 this.editingTimeSpans = false;
             },
             // Wrapper to access moment() in inline statements
@@ -201,7 +198,7 @@ jQuery(document).ready(function($) {
 
     // Template for the whole table listing the activities
     var ActivityTableComponent = Vue.extend({
-        props: ['activities', 'totaltimes', 'saving', 'currentms'],
+        props: ['activities', 'totaltimes', 'saving', 'currentms', 'settings'],
         template:
             '<div id="activities">'+
                 '<div v-if="saving.refused" id="refusedMessage">'+loc('The server refused to save the data. '+
@@ -218,7 +215,7 @@ jQuery(document).ready(function($) {
                     '</thead>'+
                     '<tbody>'+
                         // Add a table row for each activity and apply the vue-activity template defined in ActivityComponent, needed values are passed with :val="val" attribute in parent and props: ['val'] entry in child
-                        '<tr is="vue-activity" v-for="activity in activities" :activity="activity" :index="$index" :totaltime="totaltimes[activity.id]" :currentms="currentms"></tr>'+
+                        '<tr is="vue-activity" v-for="activity in activities" :activity="activity" :index="$index" :totaltime="totaltimes[activity.id]" :currentms="currentms" :settings="settings"></tr>'+
                     '</tbody>'+
                 '</table>'+
                 '<hr></hr>'+
@@ -235,7 +232,7 @@ jQuery(document).ready(function($) {
 
     // Template for adding a new activity
     var AddActivityComponent = Vue.extend({
-        props: ['activities', 'form'],
+        props: ['activities', 'form', 'settings', 'presets'],
         template:
             '<div id="addActivity">'+
                 '<form @submit.prevent="addActivity()">'+
@@ -244,18 +241,85 @@ jQuery(document).ready(function($) {
                         '<label class="row"><span class="cell">'+loc('Type')+'</span><select class="cell" v-model="form.type" id="type"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></label>'+
                         '<label class="row"><span class="cell">'+loc('Comment')+'</span><input type="text" class="cell" v-model="form.comment" id="comment"></label>'+
                         '<label class="row"><span class="cell">'+loc('Send comment')+'</span><input type="checkbox" class="cell" v-model="form.sendComment"></label>'+
-                        '<p class="row"><input type="submit" class="cell foswikiSubmit" value="'+loc('Add activity')+'"></p>'+
+                        '<p class="row"><span class="cell"><input type="submit" class="foswikiSubmit" value="'+loc('Add activity')+'"></span><span class="cell"><input type="submit" class="foswikiButton" @click.stop.prevent="saveAsPreset()" value="'+loc('Save as preset')+'"></span></p>'+
                     '</div>'+
+                '</form>'+
+                '<form @submit.prevent="">'+
+                    '<legend>'+
+                        loc('Settings')+
+                        '<div class="table">'+
+                            '<label class="row"><span class="cell">'+loc('Only one running timer')+'</span><input type="checkbox" class="cell" v-model="settings.onlyOneRunning"></label>'+
+                            '<label class="row"><span class="cell">'+loc('Allow empty activity')+'</span><input type="checkbox" class="cell" v-model="settings.allowEmptyActivity"></label>'+
+                        '</div>'+
+                    '</legend>'+
+                    '<legend>'+
+                        loc('Presets')+
+                        '<ul>'+
+                            '<li v-for="preset in presets">'+
+                                '<input v-if="preset.presetName" type="submit" class="foswikiButton" @click.stop.prevent="fromPreset(preset.id)" v-model="preset.presetName">'+
+                                '<input v-else type="text" v-model="preset.presetName" placeholder="Name" @keyup.enter="savePreset(preset.id)" @blur="savePreset(preset.id)" debounce="999999999">'+
+                            '</li>'+
+                        '</ul>'+
+                    '</legend>'+
                 '</form>'+
             '</div>',
         methods: {
-            addActivity: function () {
-                if(this.form.ticket !== "" || this.form.type !== "" || this.form.comment !== "" || allowEmptyActivity) { // Prevent empty activity unless setted otherwise
+            addActivity: function (preset) {
+                if(preset || this.form.ticket !== "" || this.form.type !== "" || this.form.comment !== "" || this.settings.allowEmptyActivity) { // Prevent empty activity unless setted otherwise
                     var updated = [];
-                    if(stopOtherTimersOnPlay) {
+                    if(this.settings.onlyOneRunning) {
                         updated = this.$root.stopAll();
                     }
-                    var newAct = {
+                    if(preset) {
+                        var newAct = preset;
+                        newAct.id = moment().valueOf();
+                    } else {
+                        var newAct = {
+                            "id": moment().valueOf(),
+                            "project": { // TODO
+                                "id": 125,
+                                "name": "Project Name"
+                            },
+                            "ticket": { // TODO
+                                "id": 125,
+                                "subject": this.form.ticket
+                            },
+                            "type": {
+                                "id": 125, // TODO
+                                "name": this.form.type
+                            },
+                            "comment": {
+                                "sendToRedmine": this.form.sendComment,
+                                "text": this.form.comment
+                            },
+                            "booked": {
+                                "inRedmine": false,
+                                "manually": false
+                            },
+                            "correction": 0,
+                            "timeSpans": [
+                                {
+                                    "startTime": moment().valueOf(),
+                                    "endTime": 0
+                                }
+                            ]
+                        };
+                    }
+                    this.activities.push(newAct);
+                    this.form = {
+                        "ticket": "",
+                        "type": "",
+                        "comment": "",
+                        "sendComment": true
+                    };
+                    updated.push(newAct);
+                    this.$root.sendToRest("set", {activities: updated, settings: []});
+                }
+            },
+            // Save the form input as local preset
+            saveAsPreset: function () {
+                if(this.form.ticket !== "" || this.form.type !== "" || this.form.comment !== "" || this.settings.allowEmptyActivity) { // Prevent empty activity unless setted otherwise
+                    var preset = {
                         "id": moment().valueOf(),
                         "project": { // TODO
                             "id": 125,
@@ -283,17 +347,45 @@ jQuery(document).ready(function($) {
                                 "startTime": moment().valueOf(),
                                 "endTime": 0
                             }
-                        ]
+                        ],
+                        "presetName": ""
                     };
-                    this.activities.push(newAct);
-                    this.form = {
-                        "ticket": "",
-                        "type": "",
-                        "comment": "",
-                        "sendComment": true
-                    };
-                    updated.push(newAct);
-                    this.$root.sendToRest("setActivities", {activities: updated});
+                    this.presets.push(preset);
+                }
+            },
+            // Saves the preset on the Server
+            savePreset: function (presetId) {
+                var preset; // TODO Triggering this doesnt work
+                for(var p in this.presets) {
+                    if(this.presets[p].id === presetId) {
+                        preset = this.presets[p];
+                        break;
+                    }
+                }
+                if(preset.presetName !== "") {
+                    this.$root.sendToRest("set", {activities: [], settings: [{"id": preset.id, "name": preset.presetName, "value": preset}]});
+                }
+            },
+            fromPreset: function (presetId) {
+                var preset;
+                for(var p in this.presets) {
+                    if(this.presets[p].id === presetId) {
+                        preset = this.presets[p];
+                        break;
+                    }
+                }
+                var matchingActivity = false;
+                for(var a in this.activities) {
+                    var act = this.activities[a];
+                    if(act.ticket.subject === preset.ticket.subject && act.type.name === preset.type.name && act.comment.text === preset.comment.text && !act.booked.inRedmine && !act.booked.manually) {
+                        // TODO add project and simplify by matching via ids
+                        matchingActivity = act;
+                    }
+                }
+                if(matchingActivity) {
+                    $("#activity"+matchingActivity.id+" button").trigger('click');
+                } else {
+                    this.addActivity(preset);
                 }
             }
         }
@@ -330,7 +422,7 @@ jQuery(document).ready(function($) {
                             totalms: totalms,
                             totalhours: dur.asHours().toFixed(4), // Decimal hours for Redmine
                             // Store each part of hh:mm:ss with a leading 0 if needed
-                            hours: dur.hours() < 10 ? "0"+dur.hours() : dur.hours(),
+                            hours: dur.asHours() < 10 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours()),
                             minutes: dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes(),
                             seconds: dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds()
                         };
@@ -341,7 +433,7 @@ jQuery(document).ready(function($) {
                     totalms: todaysTotal,
                     totalhours: dur.asHours().toFixed(4), // Decimal hours for Redmine
                     // Store each part of hh:mm:ss with a leading 0 if needed
-                    hours: dur.hours() < 10 ? "0"+dur.hours() : dur.hours(),
+                    hours: dur.asHours() < 10 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours()),
                     minutes: dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes(),
                     seconds: dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds()
                 };
@@ -353,6 +445,10 @@ jQuery(document).ready(function($) {
     var vm = new Vue({
         el: '#timeTracker', // Dom element, where Vue is applied to
         data: {
+            "settings": {
+                "onlyOneRunning": true,
+                "allowEmptyActivity": false
+            },
             "form" : { // Storage for the "new activity form" data
                 "ticket": "",
                 "type": "",
@@ -366,7 +462,8 @@ jQuery(document).ready(function($) {
                 "errored": false, // Has something went wrong and was not correctly saved
                 "refused": false // Was saving refused
             },
-            "activities": [] // Data stored in Meta lands here
+            "activities": [], // Data stored in Meta lands here
+            "presets": []
         },
         computed: comp, // Computed propertys from above
         methods: {
@@ -398,7 +495,7 @@ jQuery(document).ready(function($) {
             },
             // Send the JSON data to rest
             sendToRest: function (action, value) {
-                if(action === "setActivities" || action === "deleteActivities") {
+                if(action === "set" || action === "deleteActivities") {
                     // Store ids of changed activities
                     if(!this.saving.errored) {
                         for(var a in value.activities) {
@@ -440,10 +537,23 @@ jQuery(document).ready(function($) {
             restResponse: function (data) {
                 var answer = JSON.parse(data);
                 switch(answer.action) {
-                    case "getActivities":
+                    case "getAll":
                         this.activities = answer.activities;
+                        this.presets = [];
+                        for(var i = 0; i < answer.settings.length; i++) {
+                            var set = answer.settings[i];
+                            if(set.name === "onlyOneRunning") {
+                                this.settings.onlyOneRunning = set.value;
+                            } else if(set.name === "allowEmptyActivity") {
+                                this.settings.allowEmptyActivity = set.value;
+                            } else {
+                                this.presets.push(set.value);
+                                console.log(set.value.presetName);
+                            }
+                        }
+                        console.log(this.presets);
                     break;
-                    case "setActivities":
+                    case "set":
                         // Remove every saved activity from the notSaved array
                         for(var i in answer.settedIds) {
                             var index = this.saving.notSaved.indexOf(answer.settedIds[i]);
@@ -506,10 +616,18 @@ jQuery(document).ready(function($) {
                     }
                 }
             }
+        },
+        watch: {
+            "settings.onlyOneRunning": function(newVal, oldVal) {
+                this.sendToRest("set", {activities: [], settings: [{"id": "onlyOneRunning", "name": "onlyOneRunning", "value": newVal}]});
+            },
+            "settings.allowEmptyActivity": function(newVal, oldVal) {
+                this.sendToRest("set", {activities: [], settings: [{"id": "allowEmptyActivity", "name": "allowEmptyActivity", "value": newVal}]});
+            }
         }
     });
 
-    vm.sendToRest("getActivities", {});
+    vm.sendToRest("getAll", {});
     // Start the update cycle
     vm.loopupdate();
 });
