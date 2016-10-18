@@ -1,3 +1,7 @@
+#timeTracker a {
+    cursor: pointer;
+}
+
 #timeTracker .hidden {
     display: none;
 }
@@ -118,6 +122,22 @@
 }
 #timeTracker #total div {
     float: right;
+    padding-left: 20px;
+}
+
+
+#timeTracker #dayList,
+#timeTracker #daySelection {
+    display: inline-block;
+    vertical-align: top;
+    margin-right: 5%;
+}
+#timeTracker #dayList th,
+#timeTracker #dayList td,
+#timeTracker #daySelection th,
+#timeTracker #daySelection td {
+    text-align: right;
+    padding-right: 50px;
     padding-left: 20px;
 }
 

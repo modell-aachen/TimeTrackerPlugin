@@ -13,7 +13,7 @@ jQuery(document).ready(function($) {
         data: function () {
             var dur = moment.duration(this.activity.correction);
             return {
-                edit: {
+                "edit": {
                     "ticket": this.activity.ticket.subject,
                     "type": this.activity.type.name,
                     "comment": this.activity.comment.text,
@@ -24,7 +24,7 @@ jQuery(document).ready(function($) {
                         "seconds": dur.seconds()
                     }
                 },
-                editingTimeSpans: false // Edit mode for time spans
+                "editingTimeSpans": false // Edit mode for time spans
             }
         },
         template:
@@ -42,7 +42,7 @@ jQuery(document).ready(function($) {
                     '</p>'+
                     '<p><span>'+loc('Including comment')+': </span><input type="checkbox" v-model="activity.comment.sendToRedmine" disabled/></p>'+
                 '</td>'+
-                '<td>{{ totaltime.hours }}:{{ totaltime.minutes }}:{{ totaltime.seconds }}<br/>{{ totaltime.totalhours }}h</td>'+
+                '<td>{{ totaltime.hours }}:{{ totaltime.minutes }}:{{ totaltime.seconds }}<br/>{{ totaltime.totalHours }}h</td>'+
                 '<td>'+
                     // Depending on wether theres a running timer this button is either a play or a stop button
                     '<button v-if="!activity.booked.inRedmine && !activity.booked.manually" :class="totaltime.running ? \'fa fa-fw fa-lg fa-pause\' : \'fa fa-fw fa-lg fa-play\'" @click.stop="totaltime.running ? stop() : start()"></button>'+
@@ -179,12 +179,12 @@ jQuery(document).ready(function($) {
                 this.editingTimeSpans = false;
             },
             cancelTimeSpans: function () {
-                this.$root.sendToRest("getAll", {});
+                this.$root.sendToRest("getToday", {});
                 this.editingTimeSpans = false;
             },
             // Wrapper to access moment() in inline statements
             showTime: function (ms) {
-                return moment(ms).format("hh:mm");
+                return moment(ms).format("HH:mm"); // HH is 24, hh is 12 system
             },
             showDuration: function(ms) {
                 var dur = moment.duration(ms);
@@ -220,7 +220,7 @@ jQuery(document).ready(function($) {
                 '</table>'+
                 '<hr></hr>'+
                 '<div id="total">'+
-                    '<div>{{ totaltimes[0].hours }}:{{ totaltimes[0].minutes }}:{{ totaltimes[0].seconds }}<br/>{{ totaltimes[0].totalhours }}h</div>'+
+                    '<div>{{ totaltimes[0].hours }}:{{ totaltimes[0].minutes }}:{{ totaltimes[0].seconds }}<br/>{{ totaltimes[0].totalHours }}h</div>'+
                     '<div>'+loc('Todays total time')+':</div>'+
                 '</div>'+
             '</div>',
@@ -228,14 +228,19 @@ jQuery(document).ready(function($) {
             'vue-activity': ActivityComponent
         }
     });
-    Vue.component('vue-activity-table', ActivityTableComponent);
 
     // Template for adding a new activity
     var AddActivityComponent = Vue.extend({
-        props: ['activities', 'form', 'settings', 'presets'],
+        props: ['activities', 'settings', 'presets'],
         data: function () {
             return {
-                editingPresets: false // Edit mode for presets
+                "editingPresets": false, // Edit mode for presets
+                "form" : { // Storage for the "new activity form" data
+                    "ticket": "",
+                    "type": "",
+                    "comment": "",
+                    "sendComment": true
+                }
             }
         },
         template:
@@ -424,7 +429,148 @@ jQuery(document).ready(function($) {
             }
         }
     });
-    Vue.component('vue-add-activity', AddActivityComponent);
+
+    // Template for showing an overview over multiple days
+    var OverviewComponent = Vue.extend({
+        props: ['currentms', 'days'],
+        computed: {
+            totalDays: { // Calculates the total time spent per activity
+                cache: true,
+                get: function () {
+                    var res = {};
+                    var allTimeTotal = 0;
+                    for(var d in this.days) {
+                        if(this.days.hasOwnProperty(d)) {
+                            var dayTotal = 0;
+                            var running = false;
+                            for(var a in this.days[d]) {
+                                if(this.days[d].hasOwnProperty(a)) {
+                                    var activityTotal = this.days[d][a].correction || 0;
+                                    // Sum up the ms of each timeSpan
+                                    for(var i in this.days[d][a].timeSpans) {
+                                        if(this.days[d][a].timeSpans.hasOwnProperty(i)) {
+                                            var span = this.days[d][a].timeSpans[i];
+                                            if(span.endTime > 0) { // Existing endTime means the timer is not running
+                                                activityTotal += (span.endTime - span.startTime); // Add stopped time diff
+                                            } else {
+                                                activityTotal += (this.currentms - span.startTime); // Add time diff since the startTime
+                                                running = true;
+                                            }
+                                        }
+                                    }
+                                    dayTotal += activityTotal;
+                                }
+                            }
+                            var dur = moment.duration(dayTotal);
+                            res[d] = {
+                                running: running,
+                                totalms: dayTotal,
+                                totalHours: dur.asHours().toFixed(4), // Decimal hours for Redmine
+                                // Store each part of hh:mm:ss with a leading 0 if needed
+                                hours: dur.asHours() < 10 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours()),
+                                minutes: dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes(),
+                                seconds: dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds()
+                            };
+                            allTimeTotal += dayTotal;
+                        }
+                    }
+                    var dur = moment.duration(allTimeTotal);
+                    res[0] = {
+                        totalms: allTimeTotal,
+                        totalHours: dur.asHours().toFixed(4), // Decimal hours for Redmine
+                        // Store each part of hh:mm:ss with a leading 0 if needed
+                        hours: dur.asHours() < 10 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours()),
+                        minutes: dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes(),
+                        seconds: dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds()
+                    };
+                    return res;
+                }
+            }
+        },
+        template:
+            '<div id="daySelection">'+
+                '<table>'+
+                    '<thead>'+
+                        '<tr>'+
+                            '<th>'+loc('Time period')+'</th>'+
+                            '<th>'+loc('Total time')+'</th>'+
+                        '</tr>'+
+                    '</thead>'+
+                    '<tbody>'+
+                        '<tr>'+
+                            '<td>'+loc('All days')+'</th>'+
+                            '<td>{{ totalDays[0].hours }}:{{ totalDays[0].minutes }}:{{ totalDays[0].seconds }}</td>'+
+                        '</tr>'+
+                    '</tbody>'+
+                '</table>'+
+            '</div>'+
+            '<div id="dayList">'+
+                '<table>'+
+                    '<thead>'+
+                        '<tr>'+
+                            '<th>'+loc('Date')+'</th>'+
+                            '<th>'+loc('Total time')+'</th>'+
+                        '</tr>'+
+                    '</thead>'+
+                    '<tbody>'+
+                        '<tr v-for="(day, activities) in days" :class="{\'running\': totalDays[day].running}">'+
+                            '<td>{{ showDate(day) }}</th>'+
+                            '<td>{{ totalDays[day].hours }}:{{ totalDays[day].minutes }}:{{ totalDays[day].seconds }}</td>'+
+                        '</tr>'+
+                    '</tbody>'+
+                '</table>'+
+            '</div>',
+        methods: {
+            showDate: function (s) {
+                return s[6]+s[7]+"."+s[4]+s[5]+"."+s[0]+s[1]+s[2]+s[3];
+            }
+        }
+    });
+
+    // Template containing everything from TimeTracker
+    var TimeTrackerComponent = Vue.extend({
+        props: ['activities', 'totaltimes', 'saving', 'currentms', 'settings', 'presets', 'days'],
+        data: function () {
+            return {
+                "activeTab": "today" // Tab selection, possible values are "today" and "overview"
+            }
+        },
+        template:
+            '<div class="jqTabPane jqTabPaneSimple jqInitedTabpane jqTabPaneInitialized">'+
+                '<ul class="jqTabGroup">'+
+                    '<li :class="activeTab === \'today\' ? \'current\' : \'\'">'+
+                        '<a @click.stop.prevent="setActiveTab(\'today\')">'+loc('Todays Activities')+'</a>'+
+                    '</li>'+
+                    '<li :class="activeTab === \'overview\' ? \'current\' : \'\'">'+
+                        '<a @click.stop.prevent="setActiveTab(\'overview\')">'+loc('Overview')+'</a>'+
+                    '</li>'+
+                '</ul>'+
+                '<span class="foswikiClear"></span>'+
+                '<div v-show="activeTab === \'today\'" class="jqTab current">'+
+                    '<vue-activity-table :activities="activities" :totaltimes="totaltimes" :saving="saving" :currentms="currentms" :settings="settings"></vue-activity-table>'+
+                    '<vue-add-activity :activities="activities" :settings="settings" :presets="presets"></vue-add-activity>'+
+                    '<span class="foswikiClear"></span>'+
+                '</div>'+
+                '<div v-show="activeTab === \'overview\'" class="jqTab current">'+
+                    '<vue-overview :currentms="currentms" :days="days"></vue-overview>'+
+                    '<span class="foswikiClear"></span>'+
+                '</div>'+
+            '</div>',
+        components: {
+            'vue-activity-table': ActivityTableComponent,
+            'vue-add-activity': AddActivityComponent,
+            'vue-overview': OverviewComponent
+        },
+        methods: {
+            setActiveTab: function (active) {
+                this.activeTab = active;
+                if(active === "overview") {
+                    this.$root.sendToRest("getAllDays", {});
+                }
+            }
+        }
+    });
+    Vue.component('vue-time-tracker', TimeTrackerComponent);
 
     // Set up computed propertys
     var comp = {
@@ -454,7 +600,7 @@ jQuery(document).ready(function($) {
                         res[this.activities[a].id] = {
                             running: running,
                             totalms: totalms,
-                            totalhours: dur.asHours().toFixed(4), // Decimal hours for Redmine
+                            totalHours: dur.asHours().toFixed(4), // Decimal hours for Redmine
                             // Store each part of hh:mm:ss with a leading 0 if needed
                             hours: dur.asHours() < 10 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours()),
                             minutes: dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes(),
@@ -465,7 +611,7 @@ jQuery(document).ready(function($) {
                 var dur = moment.duration(todaysTotal);
                 res[0] = {
                     totalms: todaysTotal,
-                    totalhours: dur.asHours().toFixed(4), // Decimal hours for Redmine
+                    totalHours: dur.asHours().toFixed(4), // Decimal hours for Redmine
                     // Store each part of hh:mm:ss with a leading 0 if needed
                     hours: dur.asHours() < 10 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours()),
                     minutes: dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes(),
@@ -483,12 +629,6 @@ jQuery(document).ready(function($) {
                 "onlyOneRunning": true,
                 "allowEmptyActivity": false
             },
-            "form" : { // Storage for the "new activity form" data
-                "ticket": "",
-                "type": "",
-                "comment": "",
-                "sendComment": true
-            },
             "currentms": 0, // = moment().valueOf(), updated every second for Vue calculations
             "saving": {
                 "notSaved": [], // Storing ids of every activity that is not exactly like this at the server
@@ -496,8 +636,9 @@ jQuery(document).ready(function($) {
                 "errored": false, // Has something went wrong and was not correctly saved
                 "refused": false // Was saving refused
             },
-            "activities": [], // Data stored in Meta lands here
-            "presets": []
+            "activities": [], // Activities stored in Meta for today land here
+            "presets": [], // Presets stored in Meta of settings land here
+            "days": [] // All activities for all days land here
         },
         computed: comp, // Computed propertys from above
         methods: {
@@ -571,7 +712,7 @@ jQuery(document).ready(function($) {
             restResponse: function (data) {
                 var answer = JSON.parse(data);
                 switch(answer.action) {
-                    case "getAll":
+                    case "getToday":
                         this.activities = answer.activities;
                         this.presets = [];
                         for(var i = 0; i < answer.settings.length; i++) {
@@ -634,6 +775,9 @@ jQuery(document).ready(function($) {
                             }
                         }
                     break;
+                    case "getAllDays":
+                        this.days = answer.days;
+                    break;
                     case "refused":
                         if(answer.cause === "timeDiff") {
                             this.saving.refused = true;
@@ -677,7 +821,7 @@ jQuery(document).ready(function($) {
         }
     });
 
-    vm.sendToRest("getAll", {});
+    vm.sendToRest("getToday", {});
     // Start the update cycle
     vm.loopupdate();
 });

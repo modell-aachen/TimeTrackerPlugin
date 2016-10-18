@@ -108,7 +108,7 @@ sub restSave {
 
     # Perform action
     switch($action) {
-        case "getAll" {
+        case "getToday" {
             # Send all stored activities back (in json: array of activity objects)
             my @activities = ();
             my @data = $meta->find('TIME');
@@ -162,10 +162,27 @@ sub restSave {
             }
             $answer->{deletedIds} = \@deleted;
         }
+        case "getAllDays" {
+            # Send all stored activities back (in json: array of days: array of activities)
+            my %days = ();
+            my @topics = Foswiki::Func::getTopicList($web);
+            @topics = grep(/^${user}_[0-9]/, @topics);
+            foreach my $topic (@topics) {
+                if(Foswiki::Func::topicExists($web, $topic)) {
+                    my ($dayMeta, $dayContent) = Foswiki::Func::readTopic($web, $topic);
+                    my @dayActivities = ();
+                    my @data = $dayMeta->find('TIME');
+                    foreach my $act (@data) {
+                        push(@dayActivities, from_json(Foswiki::urlDecode($act->{activity})));
+                    }
+                    my $day = $topic;
+                    $day =~ s/[a-zA-Z_]*//g; # Stripping the username part to get the YYYYMMDD string
+                    $days{$day} = \@dayActivities;
+                }
+            }
+            $answer->{days} = \%days;
+        }
     }
-
-
-
 
 
     # Save and send answer to client

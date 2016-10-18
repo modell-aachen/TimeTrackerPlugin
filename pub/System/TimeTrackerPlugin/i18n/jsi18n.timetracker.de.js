@@ -1,5 +1,6 @@
 jsi18n.add('timetracker', {
     "Add activity": "Aktivit&auml;t hinzuf&uuml;gen",
+    "All days": "Alle Tage",
     "Allow empty activity": "Leere Aktivit&auml;t erlauben",
     "Book": "Buchen",
     "Book in Redmine": "In Redmine buchen",
@@ -7,6 +8,7 @@ jsi18n.add('timetracker', {
     "Cancel edit": "Abbrechen",
     "Comment": "Kommentar",
     "Correction": "Korrektur",
+    "Date": "Datum",
     "Duration": "Dauer",
     "Delete": "L&ouml;schen",
     "Delete activity": "Aktivit&auml;t l&ouml;schen",
@@ -15,6 +17,7 @@ jsi18n.add('timetracker', {
     "From": "Von",
     "Including comment": "Einschlie&szlig;lich Kommentar",
     "Only one running timer": "Nur ein laufender timer",
+    "Overview": "&Uuml;bersicht",
     "Please enter a name for this preset:": "Bitte geben Sie einen Namen für diese Vorlage ein:", // No &uuml; due to prompt()
     "Preset name": "Vorlagen Name",
     "Presets": "Vorlagen",
@@ -26,6 +29,8 @@ jsi18n.add('timetracker', {
     "Settings": "Einstellungen",
     "Status": "Status",
     "Ticket": "Ticket",
+    "Time period": "Zeitspanne",
+    "Todays activities": "Heutige Aktivit&auml;ten",
     "Todays total time": "Heutige Gesamtzeit",
     "Total time": "Gesamtzeit",
     "To": "Bis",

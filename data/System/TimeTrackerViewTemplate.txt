@@ -4,6 +4,7 @@
 }%%TMPL:PREV%%{
 }%%VUE%%{
 }%%JQREQUIRE{"jqp::moment"}%%{
+}%%JQREQUIRE{"tabpane"}%%{
 }%%ADDTOZONE{
     "head"
     text="<link rel=\"stylesheet\" href=\"%PUBURL%/System/FontAwesomeContrib/css/font-awesome.min.css\"/>"
@@ -21,7 +22,6 @@
     text="<link rel=\"stylesheet\" href=\"%PUBURL%/System/TimeTrackerPlugin/timetracker.css\">"
 }%%{
 }%<div id="timeTracker">
-    <vue-activity-table :activities="activities" :totaltimes="totaltimes" :saving="saving" :currentms="currentms" :settings="settings"></vue-activity-table>
-    <vue-add-activity :activities="activities" :form="form" :settings="settings" :presets="presets"></vue-add-activity>
+    <vue-time-tracker :activities="activities" :totaltimes="totaltimes" :saving="saving" :currentms="currentms" :settings="settings" :presets="presets" :days="days"></vue-time-tracker>
 </div>%{
 }%%TMPL:END%
