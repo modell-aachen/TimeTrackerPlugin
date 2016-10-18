@@ -26,6 +26,10 @@
 #timeTracker input.small {
     width: 3em;
 }
+#timeTracker legend span {
+    font-weight: bold;
+    margin-right: 14px;
+}
 
 
 #timeTracker table {
@@ -40,7 +44,10 @@
     background-color: #6494c9;
 }
 #timeTracker tr:not(.details) {
-    background-color: #EEEEEE;
+    background-color: #eeeeee;
+}
+#timeTracker tr.running {
+    background-color: #cccccc;
 }
 #timeTracker tr.booked-manually {
     background-color: #00cccc;

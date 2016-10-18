@@ -126,28 +126,41 @@ sub restSave {
         }
         case "set" {
             # Update or create every activity in the activities array
-            my @updated = ();
+            my @updatedActivities = ();
             my @activities = @{$value->{activities}}; # @{...} is for getting the array itself instead of a reference to the array
             foreach my $act (@activities) {
                 $meta->putKeyed('TIME', {name => $act->{id}, activity => Foswiki::urlEncode(to_json($act))});
-                push(@updated, $act->{id});
+                push(@updatedActivities, $act->{id});
             }
-            $answer->{settedIds} = \@updated;
+            $answer->{settedActivitiesIds} = \@updatedActivities;
             # Settings
+            my @updatedSettings = ();
             my @settings = @{$value->{settings}}; # @{...} is for getting the array itself instead of a reference to the array
             foreach my $set (@settings) {
                 $settingsMeta->putKeyed('TIME', {name => $set->{id}, setting => Foswiki::urlEncode(to_json($set))});
+                push(@updatedSettings, $set);
             }
+            $answer->{settedSettings} = \@updatedSettings;
         }
         case "deleteActivities" {
-            # Update or create every activity in the activities array
-            my @updated = ();
+            # Delete activities from the activities array
+            my @deleted = ();
             my @activities = @{$value->{activities}}; # @{...} is for getting the array itself instead of a reference to the array
             foreach my $act (@activities) {
                 $meta->remove('TIME', $act->{id});
-                push(@updated, $act->{id});
+                push(@deleted, $act->{id});
             }
-            $answer->{deletedIds} = \@updated;
+            $answer->{deletedIds} = \@deleted;
+        }
+        case "deleteSettings" {
+            # Delete setting or preset from the settings
+            my @deleted = ();
+            my @settings = @{$value->{settings}}; # @{...} is for getting the array itself instead of a reference to the array
+            foreach my $set (@settings) {
+                $settingsMeta->remove('TIME', $set->{id});
+                push(@deleted, $set->{id});
+            }
+            $answer->{deletedIds} = \@deleted;
         }
     }
 

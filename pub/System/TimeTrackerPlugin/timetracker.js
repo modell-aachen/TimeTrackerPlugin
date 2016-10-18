@@ -28,7 +28,7 @@ jQuery(document).ready(function($) {
             }
         },
         template:
-            '<tr id="activity{{ activity.id }}" @click="toggleDetails()" :class="{\'booked-redmine\': activity.booked.inRedmine, \'booked-manually\': activity.booked.manually}">'+
+            '<tr id="activity{{ activity.id }}" @click="toggleDetails()" :class="{\'booked-redmine\': activity.booked.inRedmine, \'booked-manually\': activity.booked.manually, \'running\': totaltime.running}">'+
                 '<td>{{ activity.project.name }}</td>'+
                 '<td>{{ activity.ticket.subject }}</td>'+
                 '<td>{{ activity.type.name }}</td>'+
@@ -188,7 +188,7 @@ jQuery(document).ready(function($) {
             },
             showDuration: function(ms) {
                 var dur = moment.duration(ms);
-                var hours = dur.hours() < 10 ? "0"+dur.hours() : dur.hours();
+                var hours = dur.asHours() < 10 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours());
                 var minutes = dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes();
                 var seconds = dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds();
                 return hours+":"+minutes+":"+seconds;
@@ -233,6 +233,11 @@ jQuery(document).ready(function($) {
     // Template for adding a new activity
     var AddActivityComponent = Vue.extend({
         props: ['activities', 'form', 'settings', 'presets'],
+        data: function () {
+            return {
+                editingPresets: false // Edit mode for presets
+            }
+        },
         template:
             '<div id="addActivity">'+
                 '<form @submit.prevent="addActivity()">'+
@@ -245,25 +250,26 @@ jQuery(document).ready(function($) {
                     '</div>'+
                 '</form>'+
                 '<form @submit.prevent="">'+
-                    '<legend>'+
-                        loc('Settings')+
+                    '<fieldset>'+
+                        '<legend><span>'+loc('Settings')+'</span></legend>'+
                         '<div class="table">'+
                             '<label class="row"><span class="cell">'+loc('Only one running timer')+'</span><input type="checkbox" class="cell" v-model="settings.onlyOneRunning"></label>'+
                             '<label class="row"><span class="cell">'+loc('Allow empty activity')+'</span><input type="checkbox" class="cell" v-model="settings.allowEmptyActivity"></label>'+
                         '</div>'+
-                    '</legend>'+
-                    '<legend>'+
-                        loc('Presets')+
+                    '</fieldset>'+
+                    '<fieldset>'+
+                        '<legend><span>'+loc('Presets')+'</span><input type="submit" class="foswikiButton" @click.stop.prevent="toggleEditingPresets()" value="'+loc('Edit')+'"></legend>'+
                         '<ul>'+
                             '<li v-for="preset in presets">'+
-                                '<input v-if="preset.presetName" type="submit" class="foswikiButton" @click.stop.prevent="fromPreset(preset.id)" v-model="preset.presetName">'+
-                                '<input v-else type="text" v-model="preset.presetName" placeholder="Name" @keyup.enter="savePreset(preset.id)" @blur="savePreset(preset.id)" debounce="999999999">'+
+                                '<input type="submit" class="foswikiButton" @click.stop.prevent="fromPreset(preset.id)" v-model="preset.presetName">'+
+                                '    <input v-show="editingPresets" type="submit" class="foswikiButtonCancel" @click.stop.prevent="deletePreset(preset.id)" value="'+loc('Delete')+'">'+
                             '</li>'+
                         '</ul>'+
-                    '</legend>'+
+                    '</fieldset>'+
                 '</form>'+
             '</div>',
         methods: {
+            // Adds a new activity. If preset is defined from preset, otherwise from form
             addActivity: function (preset) {
                 if(preset || this.form.ticket !== "" || this.form.type !== "" || this.form.comment !== "" || this.settings.allowEmptyActivity) { // Prevent empty activity unless setted otherwise
                     var updated = [];
@@ -271,8 +277,37 @@ jQuery(document).ready(function($) {
                         updated = this.$root.stopAll();
                     }
                     if(preset) {
-                        var newAct = preset;
-                        newAct.id = moment().valueOf();
+                        // Create a deep copy of the preset to prevent call by reference
+                        var newAct = {
+                            "id": moment().valueOf(),
+                            "project": {
+                                "id": preset.project.id,
+                                "name": preset.project.name
+                            },
+                            "ticket": {
+                                "id": preset.ticket.id,
+                                "subject": preset.ticket.subject
+                            },
+                            "type": {
+                                "id": preset.type.id,
+                                "name": preset.type.name
+                            },
+                            "comment": {
+                                "sendToRedmine": preset.comment.sendToRedmine,
+                                "text": preset.comment.text
+                            },
+                            "booked": {
+                                "inRedmine": preset.booked.inRedmine,
+                                "manually": preset.booked.manually
+                            },
+                            "correction": preset.correction,
+                            "timeSpans": [
+                                {
+                                    "startTime": moment().valueOf(),
+                                    "endTime": 0
+                                }
+                            ]
+                        };
                     } else {
                         var newAct = {
                             "id": moment().valueOf(),
@@ -316,9 +351,10 @@ jQuery(document).ready(function($) {
                     this.$root.sendToRest("set", {activities: updated, settings: []});
                 }
             },
-            // Save the form input as local preset
+            // Save the form input as preset
             saveAsPreset: function () {
                 if(this.form.ticket !== "" || this.form.type !== "" || this.form.comment !== "" || this.settings.allowEmptyActivity) { // Prevent empty activity unless setted otherwise
+                    var presetName = prompt(loc("Please enter a name for this preset:"));
                     var preset = {
                         "id": moment().valueOf(),
                         "project": { // TODO
@@ -342,30 +378,13 @@ jQuery(document).ready(function($) {
                             "manually": false
                         },
                         "correction": 0,
-                        "timeSpans": [
-                            {
-                                "startTime": moment().valueOf(),
-                                "endTime": 0
-                            }
-                        ],
-                        "presetName": ""
+                        "timeSpans": [],
+                        "presetName": presetName
                     };
-                    this.presets.push(preset);
-                }
-            },
-            // Saves the preset on the Server
-            savePreset: function (presetId) {
-                var preset; // TODO Triggering this doesnt work
-                for(var p in this.presets) {
-                    if(this.presets[p].id === presetId) {
-                        preset = this.presets[p];
-                        break;
-                    }
-                }
-                if(preset.presetName !== "") {
                     this.$root.sendToRest("set", {activities: [], settings: [{"id": preset.id, "name": preset.presetName, "value": preset}]});
                 }
             },
+            // Activate the activity matching this preset or add a new activity from this preset
             fromPreset: function (presetId) {
                 var preset;
                 for(var p in this.presets) {
@@ -387,6 +406,21 @@ jQuery(document).ready(function($) {
                 } else {
                     this.addActivity(preset);
                 }
+            },
+            // Delete the preset
+            deletePreset: function (presetId) {
+                var preset;
+                for(var p in this.presets) {
+                    if(this.presets[p].id === presetId) {
+                        preset = this.presets[p];
+                        break;
+                    }
+                }
+                this.$root.sendToRest("deleteSettings", {settings: [preset]});
+            },
+            // Toggle the display of editing options
+            toggleEditingPresets: function () {
+                this.editingPresets = !this.editingPresets;
             }
         }
     });
@@ -548,18 +582,20 @@ jQuery(document).ready(function($) {
                                 this.settings.allowEmptyActivity = set.value;
                             } else {
                                 this.presets.push(set.value);
-                                console.log(set.value.presetName);
                             }
                         }
-                        console.log(this.presets);
                     break;
                     case "set":
                         // Remove every saved activity from the notSaved array
-                        for(var i in answer.settedIds) {
-                            var index = this.saving.notSaved.indexOf(answer.settedIds[i]);
+                        for(var i in answer.settedActivitiesIds) {
+                            var index = this.saving.notSaved.indexOf(answer.settedActivitiesIds[i]);
                             if(index > -1){
                                 this.saving.notSaved.splice(index, 1);
                             }
+                        }
+                        // Add saved presets
+                        for(var p in answer.settedSettings) {
+                            this.presets.push(answer.settedSettings[p].value);
                         }
                         this.saving.openSaves--;
                         this.checkSaves();
@@ -583,6 +619,20 @@ jQuery(document).ready(function($) {
                         }
                         this.saving.openSaves--;
                         this.checkSaves();
+                    break;
+                    case "deleteSettings":
+                        // Remove every deleted preset the presets array
+                        for(var i in answer.deletedIds) {
+                            var index = -1;
+                            for(var p in this.presets) {
+                                if(this.presets[p].id === answer.deletedIds[i]) {
+                                    index = p;
+                                }
+                            }
+                            if(index > -1){
+                                this.presets.splice(index, 1);
+                            }
+                        }
                     break;
                     case "refused":
                         if(answer.cause === "timeDiff") {
