@@ -44,7 +44,7 @@ jQuery(document).ready(function($) {
                 '</td>'+
                 '<td>{{ totaltime.hours }}:{{ totaltime.minutes }}:{{ totaltime.seconds }}<br/>{{ totaltime.totalHours }}h</td>'+
                 '<td>'+
-                    // Depending on wether theres a running timer this button is either a play or a stop button
+                    // Depending on whether theres a running timer this button is either a play or a stop button
                     '<button v-if="!activity.booked.inRedmine && !activity.booked.manually" :class="totaltime.running ? \'fa fa-fw fa-lg fa-pause\' : \'fa fa-fw fa-lg fa-play\'" @click.stop="totaltime.running ? stop() : start()"></button>'+
                 '</td>'+
             '</tr>'+
@@ -57,7 +57,7 @@ jQuery(document).ready(function($) {
                                 '<label class="row"><span class="cell">'+loc('Type')+'</span><select class="cell" id="type" v-model="edit.type"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></label>'+
                                 '<label class="row"><span class="cell">'+loc('Comment')+'</span><input type="text" class="cell" id="comment" v-model="edit.comment"></label>'+
                                 '<label class="row"><span class="cell">'+loc('Send comment')+'</span><input type="checkbox" class="cell" id="sendComment" v-model="edit.sendComment"></label>'+
-                                '<label class="row"><span class="cell">'+loc('Correction')+'</span><input type="number" class="small" v-model="edit.correction.hours" number> : <input type="number" class="small" v-model="edit.correction.minutes" number> : <input type="number" class="small" v-model="edit.correction.seconds" number></label>'+
+                                '<label class="row"><span class="cell">'+loc('Correction')+'</span><input type="number" class="small" v-model="edit.correction.hours" number>h  :  <input type="number" class="small" v-model="edit.correction.minutes" number>m</label>'+
                                 '<div class="row">'+
                                     '<input type="submit" class="foswikiSubmit cell" value="'+loc('Save edit')+'">'+
                                     '<div class="cell">'+
@@ -139,12 +139,14 @@ jQuery(document).ready(function($) {
             },
             // Cancel the edit and reset the input fields
             cancelEdit: function () {
-                this.edit = {
-                    "ticket": this.activity.ticket.subject,
-                    "type": this.activity.type.name,
-                    "comment": this.activity.comment.text,
-                    "sendComment": this.activity.comment.sendToRedmine
-                };
+                var dur = moment.duration(this.activity.correction);
+                this.edit.ticket = this.activity.ticket.subject,
+                this.edit.type = this.activity.type.name,
+                this.edit.comment = this.activity.comment.text,
+                this.edit.sendComment = this.activity.comment.sendToRedmine,
+                this.edit.correction.hours = Math.floor(dur.asHours());
+                this.edit.correction.minutes = dur.minutes();
+                this.edit.correction.seconds = dur.seconds();
             },
             // Delete this Activity
             delete: function () {
@@ -433,8 +435,29 @@ jQuery(document).ready(function($) {
     // Template for showing an overview over multiple days
     var OverviewComponent = Vue.extend({
         props: ['currentms', 'days'],
+        data: function () {
+            return {
+                "selection": {
+                    "start": {
+                        "year": "1970",
+                        "month": "01",
+                        "day": "01"
+                    },
+                    "end": {
+                        "year": moment().format("YYYY"),
+                        "month": moment().format("MM"),
+                        "day": moment().format("DD")
+                    }
+                },
+                "totalOfPeriod": {
+                    "allDays": "",
+                    "currentMonth": "",
+                    "currentWeek": ""
+                }
+            }
+        },
         computed: {
-            totalDays: { // Calculates the total time spent per activity
+            totalOfDays: { // Calculates the total time spent per activity
                 cache: true,
                 get: function () {
                     var res = {};
@@ -498,11 +521,38 @@ jQuery(document).ready(function($) {
                     '</thead>'+
                     '<tbody>'+
                         '<tr>'+
-                            '<td>'+loc('All days')+'</th>'+
-                            '<td>{{ totalDays[0].hours }}:{{ totalDays[0].minutes }}:{{ totalDays[0].seconds }}</td>'+
+                            '<td>'+loc('All days')+'</td>'+
+                            '<td>{{ totalOfPeriod["allDays"] }}</td>'+
+                        '</tr>'+
+                        '<tr>'+
+                            '<td>'+loc('Current month')+'</td>'+
+                            '<td>{{ totalOfPeriod["currentMonth"] }}</td>'+
+                        '</tr>'+
+                        '<tr>'+
+                            '<td>'+loc('Current week')+'</td>'+
+                            '<td>{{ totalOfPeriod["currentWeek"] }}</td>'+
                         '</tr>'+
                     '</tbody>'+
                 '</table>'+
+                '<form @submit.prevent="">'+
+                    '<fieldset>'+
+                        '<legend><span>'+loc('Select time period')+'</span></legend>'+
+                        '<div class="table">'+
+                            '<label class="row">'+
+                                '<span class="cell">'+loc('Start date')+'</span>'+
+                                '<input type="number" class="small" v-model="selection.start.day" number>.  '+
+                                '<input type="number" class="small" v-model="selection.start.month" number>.  '+
+                                '<input type="number" class="small" v-model="selection.start.year" number>'+
+                            '</label>'+
+                            '<label class="row">'+
+                                '<span class="cell">'+loc('End date')+'</span>'+
+                                '<input type="number" class="small" v-model="selection.end.day" number>.  '+
+                                '<input type="number" class="small" v-model="selection.end.month" number>.  '+
+                                '<input type="number" class="small" v-model="selection.end.year" number>'+
+                            '</label>'+
+                        '</div>'+
+                    '</fieldset>'+
+                '</form>'+
             '</div>'+
             '<div id="dayList">'+
                 '<table>'+
@@ -513,16 +563,63 @@ jQuery(document).ready(function($) {
                         '</tr>'+
                     '</thead>'+
                     '<tbody>'+
-                        '<tr v-for="(day, activities) in days" :class="{\'running\': totalDays[day].running}">'+
+                        '<tr v-for="(day, activities) in days" :class="{\'running\': totalOfDays[day].running}">'+
                             '<td>{{ showDate(day) }}</th>'+
-                            '<td>{{ totalDays[day].hours }}:{{ totalDays[day].minutes }}:{{ totalDays[day].seconds }}</td>'+
+                            '<td>{{ totalOfDays[day].hours }}:{{ totalOfDays[day].minutes }}:{{ totalOfDays[day].seconds }}</td>'+
                         '</tr>'+
                     '</tbody>'+
                 '</table>'+
             '</div>',
         methods: {
+            // Sums up the total time from the start to the end date (including)
+            // Params are formatted either as YYYYMMDD or as {year: YYYY, month: MM, day: DD}
+            getSummedTimes: function (start, end) {
+                var duration = 0;
+                // Split day-string, if not already formatted
+                if(start.year === undefined) {
+                    var s = start.toString();
+                    start = {
+                        year: s[0]+s[1]+s[2]+s[3],
+                        month: s[4]+s[5],
+                        day: s[6]+s[7]
+                    }
+                    s = end.toString();
+                    end = {
+                        year: s[0]+s[1]+s[2]+s[3],
+                        month: s[4]+s[5],
+                        day: s[6]+s[7]
+                    }
+                }
+                // Sum the total times for each day
+                for(var year = start.year; year <= end.year; year++) {
+                    var startMonth = year === start.year ? start.month : 1;
+                    var endMonth = year === end.year ? end.month : 12;
+                    for(var month = startMonth; month <= endMonth; month++) {
+                        var startDay = year === start.year && month === start.month ? start.day : 1;
+                        var endDay = year === end.year && month === end.month ? end.day : 31;
+                        for(var day = startDay; day <= endDay; day++) {
+                            if(this.totalOfDays.hasOwnProperty(""+year+month+day)) {
+                                duration += this.totalOfDays[""+year+month+day].totalms;
+                            }
+                        }
+                    }
+                }
+                var dur = moment.duration(duration);
+                var hours = dur.asHours() < 10 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours());
+                var minutes = dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes();
+                var seconds = dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds();
+                return hours+":"+minutes+":"+seconds;
+            },
             showDate: function (s) {
                 return s[6]+s[7]+"."+s[4]+s[5]+"."+s[0]+s[1]+s[2]+s[3];
+            }
+        },
+        watch: {
+            "totalOfDays": function(newVal, oldVal) {
+                this.totalOfPeriod.allDays = this.totalOfDays[0].hours+":"+this.totalOfDays[0].minutes+":"+this.totalOfDays[0].seconds;
+                this.totalOfPeriod.currentMonth = this.getSummedTimes(moment().format("YYYYMM")+"01", moment().format("YYYYMM")+"31");
+                var weekStartDate = Number(moment().format("YYYYMMDD")) - Number(moment().format("e")); // Substracting the weekday index "e"
+                this.totalOfPeriod.currentWeek = this.getSummedTimes(weekStartDate, moment().format("YYYYMMDD"));
             }
         }
     });
