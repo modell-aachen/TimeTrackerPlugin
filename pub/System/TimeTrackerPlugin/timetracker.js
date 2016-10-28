@@ -447,7 +447,8 @@ jQuery(document).ready(function($) {
                         "year": moment().format("YYYY"),
                         "month": moment().format("MM"),
                         "day": moment().format("DD")
-                    }
+                    },
+                    "onlyRunning": false
                 },
                 "totalOfPeriod": {
                     "allDays": "",
@@ -550,6 +551,10 @@ jQuery(document).ready(function($) {
                                 '<input type="number" class="small" v-model="selection.end.month" number>.  '+
                                 '<input type="number" class="small" v-model="selection.end.year" number>'+
                             '</label>'+
+                            '<label class="row">'+
+                                '<span class="cell">'+loc('Only running')+'</span>'+
+                                '<input type="checkbox" class="cell" v-model="selection.onlyRunning">'+
+                            '</label>'+
                         '</div>'+
                     '</fieldset>'+
                 '</form>'+
@@ -563,7 +568,7 @@ jQuery(document).ready(function($) {
                         '</tr>'+
                     '</thead>'+
                     '<tbody>'+
-                        '<tr v-for="(day, activities) in days" :class="{\'running\': totalOfDays[day].running}">'+
+                        '<tr v-for="(day, activities) in days" v-show="isInSelection(day)" :class="{\'running\': totalOfDays[day].running}">'+
                             '<td>{{ showDate(day) }}</th>'+
                             '<td>{{ totalOfDays[day].hours }}:{{ totalOfDays[day].minutes }}:{{ totalOfDays[day].seconds }}</td>'+
                         '</tr>'+
@@ -609,6 +614,18 @@ jQuery(document).ready(function($) {
                 var minutes = dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes();
                 var seconds = dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds();
                 return hours+":"+minutes+":"+seconds;
+            },
+            isInSelection: function (day) {
+                if(this.selection.onlyRunning && !this.totalOfDays[day].running) {
+                    // Not in selection, because theres no running timer for this day
+                    return false;
+                }
+
+                var start = this.selection.start.year+"-"+this.selection.start.month+"-"+this.selection.start.day;
+                var end = this.selection.end.year+"-"+this.selection.end.month+"-"+this.selection.end.day;
+                var d = moment(day, "YYYYMMDD");
+                var res = moment(day, "YYYYMMDD").isBetween(start, end, 'day', '[]');
+                return res;
             },
             showDate: function (s) {
                 return s[6]+s[7]+"."+s[4]+s[5]+"."+s[0]+s[1]+s[2]+s[3];

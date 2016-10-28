@@ -20,6 +20,7 @@ jsi18n.add('timetracker', {
     "From": "Von",
     "Including comment": "Einschlie&szlig;lich Kommentar",
     "Only one running timer": "Nur ein laufender timer",
+    "Only running": "Nur laufende",
     "Overview": "&Uuml;bersicht",
     "Please enter a name for this preset:": "Bitte geben Sie einen Namen für diese Vorlage ein:", // No &uuml; due to prompt()
     "Preset name": "Vorlagen Name",
