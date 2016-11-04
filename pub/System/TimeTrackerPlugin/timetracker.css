@@ -117,6 +117,9 @@
     float: left;
     margin-right: 10px;
 }
+#timeTracker #addActivity label.validated {
+    background-color: #00cc66;
+}
 
 #timeTracker #total {
     max-width: 1200px;

@@ -3,6 +3,7 @@ jsi18n.add('timetracker', {
     "All days": "Alle Tage",
     "Allow empty activity": "Leere Aktivit&auml;t erlauben",
     "Book": "Buchen",
+    "Book directly to project": "Direkt aufs Projekt buchen",
     "Book in Redmine": "In Redmine buchen",
     "Booked in Redmine": "In Redmine gebucht",
     "Cancel edit": "Abbrechen",
