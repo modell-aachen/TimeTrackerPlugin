@@ -47,16 +47,17 @@
     padding: 15px 3px;
     background-color: #6494c9;
 }
-#timeTracker tr:not(.details) {
+#timeTracker tbody tr:not(.details) {
     background-color: #eeeeee;
+    cursor: pointer;
 }
-#timeTracker tr.running {
+#timeTracker tbody tr.running {
     background-color: #cccccc;
 }
-#timeTracker tr.booked-manually {
+#timeTracker tbody tr.booked-manually {
     background-color: #00cccc;
 }
-#timeTracker tr.booked-redmine {
+#timeTracker tbody tr.booked-redmine {
     background-color: #00cc66;
 }
 #timeTracker span.booked-redmine {
@@ -139,6 +140,9 @@
     text-align: right;
     padding-right: 50px;
     padding-left: 20px;
+}
+#timeTracker #daySelection tr {
+    cursor: unset;
 }
 
 /*

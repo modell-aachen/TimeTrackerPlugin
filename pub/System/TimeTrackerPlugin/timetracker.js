@@ -439,14 +439,14 @@ jQuery(document).ready(function($) {
             return {
                 "selection": {
                     "start": {
-                        "year": "1970",
-                        "month": "01",
-                        "day": "01"
+                        "year": 1970,
+                        "month": 01,
+                        "day": 01
                     },
                     "end": {
-                        "year": moment().format("YYYY"),
-                        "month": moment().format("MM"),
-                        "day": moment().format("DD")
+                        "year": moment().year(),
+                        "month": (moment().month()+1), // Months start at 0 in moment
+                        "day": moment().date()
                     },
                     "onlyRunning": false
                 },
@@ -541,15 +541,15 @@ jQuery(document).ready(function($) {
                         '<div class="table">'+
                             '<label class="row">'+
                                 '<span class="cell">'+loc('Start date')+'</span>'+
-                                '<input type="number" class="small" v-model="selection.start.day" number>.  '+
-                                '<input type="number" class="small" v-model="selection.start.month" number>.  '+
-                                '<input type="number" class="small" v-model="selection.start.year" number>'+
+                                '<input type="number" class="small" v-model="selection.start.day" min="1" max="31" number>.  '+
+                                '<input type="number" class="small" v-model="selection.start.month" min="1" max="12" number>.  '+
+                                '<input type="number" class="small" v-model="selection.start.year" min="1970" number>'+
                             '</label>'+
                             '<label class="row">'+
                                 '<span class="cell">'+loc('End date')+'</span>'+
-                                '<input type="number" class="small" v-model="selection.end.day" number>.  '+
-                                '<input type="number" class="small" v-model="selection.end.month" number>.  '+
-                                '<input type="number" class="small" v-model="selection.end.year" number>'+
+                                '<input type="number" class="small" v-model="selection.end.day" min="1" max="31" number>.  '+
+                                '<input type="number" class="small" v-model="selection.end.month" min="1" max="12" number>.  '+
+                                '<input type="number" class="small" v-model="selection.end.year" min="1970" number>'+
                             '</label>'+
                             '<label class="row">'+
                                 '<span class="cell">'+loc('Only running')+'</span>'+
@@ -620,12 +620,14 @@ jQuery(document).ready(function($) {
                     // Not in selection, because theres no running timer for this day
                     return false;
                 }
-
-                var start = this.selection.start.year+"-"+this.selection.start.month+"-"+this.selection.start.day;
-                var end = this.selection.end.year+"-"+this.selection.end.month+"-"+this.selection.end.day;
                 var d = moment(day, "YYYYMMDD");
-                var res = moment(day, "YYYYMMDD").isBetween(start, end, 'day', '[]');
-                return res;
+                if(this.selection.start.year > d.year() || (this.selection.start.year === d.year() && this.selection.start.month > (d.month()+1)) || (this.selection.start.year === d.year() && this.selection.start.month === (d.month()+1) && this.selection.start.day > d.date())) {
+                    return false;
+                }
+                if(this.selection.end.year < d.year() || (this.selection.end.year === d.year() && this.selection.end.month < (d.month()+1)) || (this.selection.end.year === d.year() && this.selection.end.month === (d.month()+1) && this.selection.end.day < d.date())) {
+                    return false;
+                }
+                return true;
             },
             showDate: function (s) {
                 return s[6]+s[7]+"."+s[4]+s[5]+"."+s[0]+s[1]+s[2]+s[3];
