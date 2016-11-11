@@ -17,17 +17,20 @@ jQuery(document).ready(function($) {
                     "project": {
                         "id": this.activity.project.id,
                         "name": this.activity.project.name,
-                        "suggestions": []
+                        "suggestions": [],
+                        "loading": false
                     },
                     "ticket": {
                         "id": this.activity.ticket.id,
                         "subject": this.activity.ticket.subject,
-                        "suggestions": []
+                        "suggestions": [],
+                        "loading": false
                     },
                     "type": {
                         "id": this.activity.type.id,
                         "name": this.activity.type.name,
-                        "suggestions": this.activity.type.suggestions
+                        "suggestions": this.activity.type.suggestions,
+                        "loading": false
                     },
                     "comment": {
                         "sendToRedmine": this.activity.comment.sendToRedmine,
@@ -70,11 +73,11 @@ jQuery(document).ready(function($) {
                     '<div v-if="!activity.booked.inRedmine && !activity.booked.manually" class="edit">'+
                         '<form @submit.prevent="saveEdit()">'+
                             '<div class="table">'+
-                                '<label :class="{row: true, validated: edit.project.id !== \'\', unvalidated: edit.project.id === \'\'}"><span class="cell">'+loc('Project')+'</span><input type="text" class="cell" v-model="edit.project.name" debounce="500" list="projectList{{ activity.id }}" id="project"></label>'+
+                                '<label :class="{row: true, validated: edit.project.id !== \'\', unvalidated: edit.project.id === \'\'}"><span class="cell">'+loc('Project')+'</span><input type="text" class="cell" v-model="edit.project.name" debounce="500" list="projectList{{ activity.id }}" id="project"><i v-show="edit.project.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
                                 '<datalist id="projectList{{ activity.id }}"><option v-for="suggestion in edit.project.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.name"></datalist>'+
-                                '<label :class="{row: true, validated: edit.ticket.id !== \'\', unvalidated: edit.ticket.id === \'\'}"><span class="cell">'+loc('Ticket')+'</span><input type="text" class="cell" v-model="edit.ticket.subject" debounce="500" list="ticketList{{ activity.id }}" id="ticket"></label>'+
+                                '<label :class="{row: true, validated: edit.ticket.id !== \'\', unvalidated: edit.ticket.id === \'\'}"><span class="cell">'+loc('Ticket')+'</span><input type="text" class="cell" v-model="edit.ticket.subject" debounce="500" list="ticketList{{ activity.id }}" id="ticket"><i v-show="edit.ticket.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
                                 '<datalist id="ticketList{{ activity.id }}"><option v-for="suggestion in edit.ticket.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.subject"></datalist>'+
-                                '<label :class="{row: true, validated: edit.type.id !== \'\', unvalidated: edit.type.id === \'\'}"><span class="cell">'+loc('Type')+'</span><select class="cell" v-model="edit.type.name" id="type"><option v-for="suggestion in edit.type.suggestions" :value="suggestion.name">{{ suggestion.name }}</option></select></label>'+
+                                '<label :class="{row: true, validated: edit.type.id !== \'\', unvalidated: edit.type.id === \'\'}"><span class="cell">'+loc('Type')+'</span><select class="cell" v-model="edit.type.name" id="type"><option v-for="suggestion in edit.type.suggestions" :value="suggestion.name">{{ suggestion.name }}</option></select><i v-show="edit.type.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
                                 '<label class="row"><span class="cell">'+loc('Comment')+'</span><input type="text" class="cell" v-model="edit.comment.text" id="comment"></label>'+
                                 '<label class="row"><span class="cell">'+loc('Send comment')+'</span><input type="checkbox" class="cell" v-model="edit.comment.sendToRedmine" id="sendComment"></label>'+
                                 '<label class="row"><span class="cell">'+loc('Correction')+'</span><input type="number" class="small" v-model="edit.correction.hours" number>h  :  <input type="number" class="small" v-model="edit.correction.minutes" number>m</label>'+
@@ -263,6 +266,7 @@ jQuery(document).ready(function($) {
                     var projectId = Number(newVal.replace(re, "$1"));
                     this.edit.project.id = projectId;
                     // Retrieve the corresponding activity types
+                    this.edit.type.loading = true;
                     $.ajax({
                         url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
                         type: 'GET',
@@ -270,6 +274,7 @@ jQuery(document).ready(function($) {
                         data: {q: projectId, type: "activity"}
                     })
                     .done(function(result) {
+                        this.edit.type.loading = false;
                         this.edit.type.suggestions = result;
                         this.edit.type.name = this.edit.type.suggestions[0].name;
                         this.edit.type.id = this.edit.type.suggestions[0].id;
@@ -279,6 +284,7 @@ jQuery(document).ready(function($) {
                     }.bind(this));
                 }
                 // Search for matching projects
+                this.edit.project.loading = true;
                 $.ajax({
                     url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
                     type: 'GET',
@@ -286,6 +292,7 @@ jQuery(document).ready(function($) {
                     data: {q: newVal, type: "project"}
                 })
                 .done(function(result) {
+                    this.edit.project.loading = false;
                     this.edit.project.suggestions = result.slice(0, 25); // Limiting the number of results
                 }.bind(this));
             },
@@ -313,6 +320,7 @@ jQuery(document).ready(function($) {
                     if(projectId) {
                         this.edit.ticket.id = ticketId;
                         // Retrieve the corresponding project
+                        this.edit.project.loading = true;
                         $.ajax({
                             url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
                             type: 'GET',
@@ -320,6 +328,7 @@ jQuery(document).ready(function($) {
                             data: {q: projectId, type: "project"}
                         })
                         .done(function(result) {
+                            this.edit.project.loading = false;
                             if(result.length === 1) {
                                 this.edit.justSet = true;
                                 this.edit.project.id = result[0].id;
@@ -327,6 +336,7 @@ jQuery(document).ready(function($) {
                             }
                         }.bind(this));
                         // Retrieve the corresponding activity types
+                        this.edit.type.loading = true;
                         $.ajax({
                             url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
                             type: 'GET',
@@ -334,6 +344,7 @@ jQuery(document).ready(function($) {
                             data: {q: projectId, type: "activity"}
                         })
                         .done(function(result) {
+                            this.edit.type.loading = false;
                             this.edit.type.suggestions = result;
                             this.edit.type.name = this.edit.type.suggestions[0].name;
                             this.edit.type.id = this.edit.type.suggestions[0].id;
@@ -341,6 +352,7 @@ jQuery(document).ready(function($) {
                     }
                 }
                 // Search for matching tickets
+                this.edit.ticket.loading = true;
                 $.ajax({
                     url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
                     type: 'GET',
@@ -348,6 +360,7 @@ jQuery(document).ready(function($) {
                     data: {q: newVal, type: "issue"}
                 })
                 .done(function(result) {
+                    this.edit.ticket.loading = false;
                     this.edit.ticket.suggestions = result.slice(0, 25); // Limiting the number of results
                 }.bind(this));
             },
@@ -405,17 +418,20 @@ jQuery(document).ready(function($) {
                     "project": {
                         "id": "",
                         "name": "",
-                        "suggestions": []
+                        "suggestions": [],
+                        "loading": false
                     },
                     "ticket": {
                         "id": "",
                         "subject": "",
-                        "suggestions": []
+                        "suggestions": [],
+                        "loading": false
                     },
                     "type": {
                         "id": "",
                         "name": "",
-                        "suggestions": []
+                        "suggestions": [],
+                        "loading": false
                     },
                     "comment": {
                         "sendToRedmine": true,
@@ -429,11 +445,11 @@ jQuery(document).ready(function($) {
             '<div id="addActivity">'+
                 '<form @submit.prevent="addActivity()">'+
                     '<div class="table">'+
-                        '<label :class="{row: true, validated: form.project.id !== \'\', unvalidated: form.project.id === \'\'}"><span class="cell">'+loc('Project')+'</span><input type="text" class="cell" v-model="form.project.name" debounce="500" list="projectList" id="project"></label>'+
+                        '<label :class="{row: true, validated: form.project.id !== \'\', unvalidated: form.project.id === \'\'}"><span class="cell">'+loc('Project')+'</span><input type="text" class="cell" v-model="form.project.name" debounce="500" list="projectList" id="project"><i v-show="form.project.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
                         '<datalist id="projectList"><option v-for="suggestion in form.project.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.name"></datalist>'+
-                        '<label :class="{row: true, validated: form.ticket.id !== \'\', unvalidated: form.ticket.id === \'\'}"><span class="cell">'+loc('Ticket')+'</span><input type="text" class="cell" v-model="form.ticket.subject" debounce="500" list="ticketList" id="ticket"></label>'+
+                        '<label :class="{row: true, validated: form.ticket.id !== \'\', unvalidated: form.ticket.id === \'\'}"><span class="cell">'+loc('Ticket')+'</span><input type="text" class="cell" v-model="form.ticket.subject" debounce="500" list="ticketList" id="ticket"><i v-show="form.ticket.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
                         '<datalist id="ticketList"><option v-for="suggestion in form.ticket.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.subject"></datalist>'+
-                        '<label :class="{row: true, validated: form.type.id !== \'\', unvalidated: form.type.id === \'\'}"><span class="cell">'+loc('Type')+'</span><select class="cell" v-model="form.type.name" id="type"><option v-for="suggestion in form.type.suggestions" :value="suggestion.name">{{ suggestion.name }}</option></select></label>'+
+                        '<label :class="{row: true, validated: form.type.id !== \'\', unvalidated: form.type.id === \'\'}"><span class="cell">'+loc('Type')+'</span><select class="cell" v-model="form.type.name" id="type"><option v-for="suggestion in form.type.suggestions" :value="suggestion.name">{{ suggestion.name }}</option></select><i v-show="form.type.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
                         '<label class="row"><span class="cell">'+loc('Comment')+'</span><input type="text" class="cell" v-model="form.comment.text" id="comment"></label>'+
                         '<label class="row"><span class="cell">'+loc('Send comment')+'</span><input type="checkbox" class="cell" v-model="form.comment.sendToRedmine" id="sendComment"></label>'+
                         '<p class="row"><span class="cell"><input type="submit" class="foswikiSubmit" value="'+loc('Add activity')+'"></span><span class="cell"><input type="submit" class="foswikiButton" @click.stop.prevent="saveAsPreset()" value="'+loc('Save as preset')+'"></span></p>'+
@@ -639,6 +655,7 @@ jQuery(document).ready(function($) {
                     var projectId = Number(newVal.replace(re, "$1"));
                     this.form.project.id = projectId;
                     // Retrieve the corresponding activity types
+                    this.form.type.loading = true;
                     $.ajax({
                         url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
                         type: 'GET',
@@ -646,6 +663,7 @@ jQuery(document).ready(function($) {
                         data: {q: projectId, type: "activity"}
                     })
                     .done(function(result) {
+                        this.form.type.loading = false;
                         this.form.type.suggestions = result;
                         this.form.type.name = this.form.type.suggestions[0].name;
                         this.form.type.id = this.form.type.suggestions[0].id;
@@ -655,6 +673,7 @@ jQuery(document).ready(function($) {
                     }.bind(this));
                 }
                 // Search for matching projects
+                this.form.project.loading = true;
                 $.ajax({
                     url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
                     type: 'GET',
@@ -662,6 +681,7 @@ jQuery(document).ready(function($) {
                     data: {q: newVal, type: "project"}
                 })
                 .done(function(result) {
+                    this.form.project.loading = false;
                     this.form.project.suggestions = result.slice(0, 25); // Limiting the number of results
                 }.bind(this));
             },
@@ -689,6 +709,7 @@ jQuery(document).ready(function($) {
                     if(projectId) {
                         this.form.ticket.id = ticketId;
                         // Retrieve the corresponding project
+                        this.form.project.loading = true;
                         $.ajax({
                             url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
                             type: 'GET',
@@ -696,6 +717,7 @@ jQuery(document).ready(function($) {
                             data: {q: projectId, type: "project"}
                         })
                         .done(function(result) {
+                            this.form.project.loading = false;
                             if(result.length === 1) {
                                 this.form.justSet = true;
                                 this.form.project.id = result[0].id;
@@ -703,6 +725,7 @@ jQuery(document).ready(function($) {
                             }
                         }.bind(this));
                         // Retrieve the corresponding activity types
+                        this.form.type.loading = true;
                         $.ajax({
                             url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
                             type: 'GET',
@@ -710,6 +733,7 @@ jQuery(document).ready(function($) {
                             data: {q: projectId, type: "activity"}
                         })
                         .done(function(result) {
+                            this.form.type.loading = false;
                             this.form.type.suggestions = result;
                             this.form.type.name = this.form.type.suggestions[0].name;
                             this.form.type.id = this.form.type.suggestions[0].id;
@@ -717,6 +741,7 @@ jQuery(document).ready(function($) {
                     }
                 }
                 // Search for matching tickets
+                this.form.ticket.loading = true;
                 $.ajax({
                     url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
                     type: 'GET',
@@ -724,6 +749,7 @@ jQuery(document).ready(function($) {
                     data: {q: newVal, type: "issue"}
                 })
                 .done(function(result) {
+                    this.form.ticket.loading = false;
                     this.form.ticket.suggestions = result.slice(0, 25); // Limiting the number of results
                 }.bind(this));
             },

@@ -24,6 +24,12 @@
 #timeTracker span.cell {
     padding-right: 10px;
 }
+#timeTracker form select {
+    width: calc(25em + 6px);
+}
+#timeTracker form input[type="text"] {
+    width: 25em;
+}
 #timeTracker form input[type="checkbox"] {
     margin-left: 0px;
 }
