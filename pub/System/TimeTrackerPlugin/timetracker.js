@@ -1173,7 +1173,7 @@ jQuery(document).ready(function($) {
                     time: moment().valueOf()
                 };
                 $.ajax({
-                    url: "/bin/rest/TimeTrackerPlugin/save",
+                    url: foswiki.getPreference('SCRIPTURL')+"/rest/TimeTrackerPlugin/save",
                     method: 'POST',
                     success: this.restResponse,
                     error: this.restError,
