@@ -60,6 +60,12 @@
 #timeTracker tbody tr.booked-redmine {
     background-color: #00cc66;
 }
+#timeTracker tbody tr:not(.booked-redmine) td.validated {
+    color: #00cc66;
+}
+#timeTracker tbody tr:not(.booked-redmine) td.unvalidated {
+    color: #666666;
+}
 #timeTracker span.booked-redmine {
     background-color: white;
     padding: 7px 15px;
@@ -119,6 +125,9 @@
 }
 #timeTracker #addActivity label.validated {
     background-color: #00cc66;
+}
+#timeTracker #addActivity label.unvalidated {
+    background-color: #a4b8cc;
 }
 
 #timeTracker #total {

@@ -29,14 +29,15 @@ jQuery(document).ready(function($) {
         },
         template:
             '<tr id="activity{{ activity.id }}" @click="toggleDetails()" :class="{\'booked-redmine\': activity.booked.inRedmine, \'booked-manually\': activity.booked.manually, \'running\': totaltime.running}">'+
-                '<td>{{ activity.project.name }}</td>'+
-                '<td>{{ activity.ticket.subject }}</td>'+
-                '<td>{{ activity.type.name }}</td>'+
+                '<td :class="{validated: activity.project.id !== \'\', unvalidated: activity.project.id === \'\'}">{{ activity.project.name }}</td>'+
+                '<td :class="{validated: activity.ticket.id !== \'\', unvalidated: activity.ticket.id === \'\'}">{{ activity.ticket.subject }}</td>'+
+                '<td :class="{validated: activity.type.id !== \'\', unvalidated: activity.type.id === \'\'}">{{ activity.type.name }}</td>'+
                 '<td>{{ activity.comment.text }}</td>'+
                 '<td>'+
                     '<p v-if="activity.booked.inRedmine"><span class="label booked-redmine">'+loc('Booked in Redmine')+'</span></p>'+ // TODO Redmine Integration
                     '<p v-else>'+
-                        '<input type="submit" class="foswikiSubmit" @click.stop.prevent="bookInRedmine()" value="'+loc('Book in Redmine')+'">'+
+                        '<input v-if="activity.project.id !== \'\' && activity.ticket.id !== \'\' && activity.type.id !== \'\'" type="submit" class="foswikiSubmit" @click.stop.prevent="bookInRedmine()" value="'+loc('Book in Redmine')+'">'+
+                        '<input v-else type="submit" class="foswikiSubmitDisabled" value="'+loc('Book in Redmine')+'" disabled>'+ // TODO Tooltip for disabling reason
                         '<input v-if="activity.booked.manually" input type="submit" class="foswikiSubmit" @click.stop.prevent="unbook()" value="'+loc('Unbook')+'">'+
                         '<input v-else @click.stop="book()" type="submit" class="foswikiSubmit" value="'+loc('Book')+'">'+
                     '</p>'+
@@ -48,7 +49,7 @@ jQuery(document).ready(function($) {
                     '<button v-if="!activity.booked.inRedmine && !activity.booked.manually" :class="totaltime.running ? \'fa fa-fw fa-lg fa-pause\' : \'fa fa-fw fa-lg fa-play\'" @click.stop="totaltime.running ? stop() : start()"></button>'+
                 '</td>'+
             '</tr>'+
-            '<tr class="details hidden">'+
+            '<tr class="details hidden">'+//TODO Redmine integration for editing
                 '<td colspan="7">'+
                     '<div v-if="!activity.booked.inRedmine && !activity.booked.manually" class="edit">'+
                         '<form @submit.prevent="saveEdit()">'+
@@ -154,9 +155,28 @@ jQuery(document).ready(function($) {
             },
             // Book in Redmine
             bookInRedmine: function () {
-                this.activity.booked.inRedmine = true; // TODO Send to Redmine and update status upon response
-                this.stop();
-                // sendToRest is done in stop()
+                if(this.activity.project.id !== "" && this.activity.ticket.id !== "" && this.activity.type.id !== "") {
+                    this.stop(); // sendToRest is done in stop()
+                    data_obj = {
+                        project_id: this.activity.project.id,
+                        issue_id: this.activity.ticket.id,
+                        activity_id: this.activity.type.id,
+                        hours: this.totaltime.totalHours,
+                        comment: this.activity.comment.sendToRedmine ? this.activity.comment.text : ""
+                    };
+                    // Send to Redmine
+                    $.ajax({
+                        url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/add_time_entry",
+                        type: 'POST',
+                        dataType: 'json',
+                        contentType: "application/json; charset=utf-8",
+                        data: JSON.stringify(data_obj)
+                    })
+                    .done(function(result) {
+                        this.activity.booked.inRedmine = true;
+                        this.$root.sendToRest("set", {activities: [this.activity], settings: []});
+                    }.bind(this));
+                }
             },
             // Mark as booked manually
             book: function () {
@@ -265,11 +285,11 @@ jQuery(document).ready(function($) {
             '<div id="addActivity">'+
                 '<form @submit.prevent="addActivity()">'+
                     '<div class="table">'+
-                        '<label :class="{row: true, validated: form.project.id !== \'\'}"><span class="cell">'+loc('Project')+'</span><input type="text" class="cell" v-model="form.project.name" debounce="500" list="projectList" id="project"></label>'+
+                        '<label :class="{row: true, validated: form.project.id !== \'\', unvalidated: form.project.id === \'\'}"><span class="cell">'+loc('Project')+'</span><input type="text" class="cell" v-model="form.project.name" debounce="500" list="projectList" id="project"></label>'+
                         '<datalist id="projectList"><option v-for="suggestion in form.project.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.name"></datalist>'+
-                        '<label :class="{row: true, validated: form.ticket.id !== \'\'}"><span class="cell">'+loc('Ticket')+'</span><input type="text" class="cell" v-model="form.ticket.subject" debounce="500" list="ticketList" id="ticket"></label>'+
+                        '<label :class="{row: true, validated: form.ticket.id !== \'\', unvalidated: form.ticket.id === \'\'}"><span class="cell">'+loc('Ticket')+'</span><input type="text" class="cell" v-model="form.ticket.subject" debounce="500" list="ticketList" id="ticket"></label>'+
                         '<datalist id="ticketList"><option v-for="suggestion in form.ticket.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.subject"></datalist>'+
-                        '<label :class="{row: true, validated: form.type.id !== \'\'}"><span class="cell">'+loc('Type')+'</span><select class="cell" v-model="form.type.name" id="type"><option v-for="suggestion in form.type.suggestions" :value="suggestion.name">{{ suggestion.name }}</option></select></label>'+
+                        '<label :class="{row: true, validated: form.type.id !== \'\', unvalidated: form.type.id === \'\'}"><span class="cell">'+loc('Type')+'</span><select class="cell" v-model="form.type.name" id="type"><option v-for="suggestion in form.type.suggestions" :value="suggestion.name">{{ suggestion.name }}</option></select></label>'+
                         '<label class="row"><span class="cell">'+loc('Comment')+'</span><input type="text" class="cell" v-model="form.comment.text" id="comment"></label>'+
                         '<label class="row"><span class="cell">'+loc('Send comment')+'</span><input type="checkbox" class="cell" v-model="form.comment.sendToRedmine"></label>'+
                         '<p class="row"><span class="cell"><input type="submit" class="foswikiSubmit" value="'+loc('Add activity')+'"></span><span class="cell"><input type="submit" class="foswikiButton" @click.stop.prevent="saveAsPreset()" value="'+loc('Save as preset')+'"></span></p>'+
@@ -337,16 +357,16 @@ jQuery(document).ready(function($) {
                     } else {
                         var newAct = {
                             "id": moment().valueOf(),
-                            "project": { // TODO
-                                "id": 125,
+                            "project": {
+                                "id": this.form.project.id,
                                 "name": this.form.project.name
                             },
-                            "ticket": { // TODO
-                                "id": 125,
+                            "ticket": {
+                                "id": this.form.ticket.id,
                                 "subject": this.form.ticket.subject
                             },
                             "type": {
-                                "id": 125, // TODO
+                                "id": this.form.type.id,
                                 "name": this.form.type.name
                             },
                             "comment": {
