@@ -96,7 +96,14 @@ sub restSave {
 
     # Create todays topic if not already existing
     my $todaystopic = "$user"."_"."$date";
-    Foswiki::Func::saveTopic($web, $todaystopic, undef, '', {dontlog => 1}) unless Foswiki::Func::topicExists($web, $todaystopic);
+    if(! (Foswiki::Func::topicExists($web, $todaystopic))) {
+        Foswiki::Func::saveTopic($web, $todaystopic, undef, '', {dontlog => 1});
+        my ($meta, $content) = Foswiki::Func::readTopic($web, $todaystopic);
+        #$meta = new Foswiki::Meta($session, $web, $todaystopic);
+        $meta->putKeyed('PREFERENCE', {name => "VIEW_TEMPLATE", title => "VIEW_TEMPLATE", type => "Set", value => "TimeTrackerView"});
+        $meta->save();
+        $meta->finish();
+    }
     # Get meta and content of storing topic
     my ($meta, $content) = Foswiki::Func::readTopic($web, $todaystopic);
 

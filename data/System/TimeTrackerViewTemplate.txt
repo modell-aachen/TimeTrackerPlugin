@@ -22,6 +22,6 @@
     text="<link rel=\"stylesheet\" href=\"%PUBURL%/System/TimeTrackerPlugin/timetracker.css\">"
 }%%{
 }%<div id="timeTracker">
-    <vue-time-tracker :activities="activities" :totaltimes="totaltimes" :saving="saving" :currentms="currentms" :settings="settings" :presets="presets" :days="days"></vue-time-tracker>
+    <vue-time-tracker :activities="activities" :totaltimes="totaltimes" :saving="saving" :currentms="currentms" :settings="settings" :presets="presets" :days="days" :isOnWebHome="isOnWebHome"></vue-time-tracker>
 </div>%{
 }%%TMPL:END%

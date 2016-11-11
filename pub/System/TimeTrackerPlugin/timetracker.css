@@ -61,7 +61,8 @@
 #timeTracker th {
     text-align: left;
     padding: 15px 3px;
-    background-color: #6494c9;
+    background-color: #003c89;
+    color: #ffffff;
 }
 #timeTracker tbody tr:not(.details) {
     background-color: #eeeeee;
@@ -71,7 +72,7 @@
     background-color: #cccccc;
 }
 #timeTracker tbody tr.booked-manually {
-    background-color: #00cccc;
+    background-color: #b3ffda;
 }
 #timeTracker tbody tr.booked-redmine {
     background-color: #00cc66;

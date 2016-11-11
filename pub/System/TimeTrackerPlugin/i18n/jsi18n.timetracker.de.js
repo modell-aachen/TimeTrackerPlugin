@@ -1,4 +1,5 @@
 jsi18n.add('timetracker', {
+    "Activities from ": "Aktivit&auml;ten vom ",
     "Add activity": "Aktivit&auml;t hinzuf&uuml;gen",
     "All days": "Alle Tage",
     "Allow empty activity": "Leere Aktivit&auml;t erlauben",

@@ -874,7 +874,7 @@ jQuery(document).ready(function($) {
                         '</tr>'+
                     '</thead>'+
                     '<tbody>'+
-                        '<tr v-for="(day, activities) in days" v-show="isInSelection(day)" :class="{\'running\': totalOfDays[day].running}">'+
+                        '<tr v-for="(day, activities) in days" v-show="isInSelection(day)" :class="{\'running\': totalOfDays[day].running}" @click="jumpTo(day)">'+
                             '<td>{{ showDate(day) }}</th>'+
                             '<td>{{ totalOfDays[day].hours }}:{{ totalOfDays[day].minutes }}:{{ totalOfDays[day].seconds }}</td>'+
                         '</tr>'+
@@ -937,6 +937,10 @@ jQuery(document).ready(function($) {
             },
             showDate: function (s) {
                 return s[6]+s[7]+"."+s[4]+s[5]+"."+s[0]+s[1]+s[2]+s[3];
+            },
+            jumpTo: function (day) {
+                var topicUrl = foswiki.getPreference('SCRIPTURL')+"/view/TimeTracker/"+foswiki.getPreference('WIKINAME')+"_"+day;
+                window.document.location = topicUrl;
             }
         },
         watch: {
@@ -951,7 +955,7 @@ jQuery(document).ready(function($) {
 
     // Template containing everything from TimeTracker
     var TimeTrackerComponent = Vue.extend({
-        props: ['activities', 'totaltimes', 'saving', 'currentms', 'settings', 'presets', 'days'],
+        props: ['activities', 'totaltimes', 'saving', 'currentms', 'settings', 'presets', 'days', 'isOnWebHome'],
         data: function () {
             return {
                 "activeTab": "today" // Tab selection, possible values are "today" and "overview"
@@ -961,7 +965,8 @@ jQuery(document).ready(function($) {
             '<div class="jqTabPane jqTabPaneSimple jqInitedTabpane jqTabPaneInitialized">'+
                 '<ul class="jqTabGroup">'+
                     '<li :class="activeTab === \'today\' ? \'current\' : \'\'">'+
-                        '<a @click.stop.prevent="setActiveTab(\'today\')">'+loc('Todays Activities')+'</a>'+
+                        '<a v-if="$root.isOnWebHome" @click.stop.prevent="setActiveTab(\'today\')">'+loc('Todays activities')+'</a>'+
+                        '<a v-else @click.stop.prevent="setActiveTab(\'today\')">'+loc('Activities from ')+'{{ $root.topicDate }}'+'</a>'+
                     '</li>'+
                     '<li :class="activeTab === \'overview\' ? \'current\' : \'\'">'+
                         '<a @click.stop.prevent="setActiveTab(\'overview\')">'+loc('Overview')+'</a>'+
@@ -970,7 +975,7 @@ jQuery(document).ready(function($) {
                 '<span class="foswikiClear"></span>'+
                 '<div v-show="activeTab === \'today\'" class="jqTab current">'+
                     '<vue-activity-table :activities="activities" :totaltimes="totaltimes" :saving="saving" :currentms="currentms" :settings="settings"></vue-activity-table>'+
-                    '<vue-add-activity :activities="activities" :settings="settings" :presets="presets"></vue-add-activity>'+
+                    '<vue-add-activity v-if="$root.isOnWebHome" :activities="activities" :settings="settings" :presets="presets"></vue-add-activity>'+
                     '<span class="foswikiClear"></span>'+
                 '</div>'+
                 '<div v-show="activeTab === \'overview\'" class="jqTab current">'+
@@ -1040,6 +1045,25 @@ jQuery(document).ready(function($) {
                     seconds: dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds()
                 };
                 return res;
+            }
+        },
+        topicDate: {
+            cache: false,
+            get: function () {
+                var topicName = foswiki.getPreference('TOPIC');
+                var date;
+                if(topicName === "WebHome") {
+                    date = moment().format('YYYYMMDD');
+                } else {
+                    date = topicName.replace(/^.+_([\d]+)/, "$1");
+                }
+                return date;
+            }
+        },
+        isOnWebHome: {
+            cache: false,
+            get: function () {
+                return foswiki.getPreference('TOPIC') === "WebHome";
             }
         }
     };
@@ -1119,7 +1143,7 @@ jQuery(document).ready(function($) {
                     value: value,
                     web: foswiki.getPreference('WEB'),
                     user: foswiki.getPreference('WIKINAME'),
-                    date: moment().format('YYYYMMDD'),
+                    date: this.topicDate,
                     time: moment().valueOf()
                 };
                 $.ajax({
