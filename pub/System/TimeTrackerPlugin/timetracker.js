@@ -13,11 +13,27 @@ jQuery(document).ready(function($) {
         data: function () {
             var dur = moment.duration(this.activity.correction);
             return {
-                "edit": {
-                    "ticket": this.activity.ticket.subject,
-                    "type": this.activity.type.name,
-                    "comment": this.activity.comment.text,
-                    "sendComment": this.activity.comment.sendToRedmine,
+                "edit": { // Storage for the data during editing
+                    "project": {
+                        "id": this.activity.project.id,
+                        "name": this.activity.project.name,
+                        "suggestions": []
+                    },
+                    "ticket": {
+                        "id": this.activity.ticket.id,
+                        "subject": this.activity.ticket.subject,
+                        "suggestions": []
+                    },
+                    "type": {
+                        "id": this.activity.type.id,
+                        "name": this.activity.type.name,
+                        "suggestions": this.activity.type.suggestions
+                    },
+                    "comment": {
+                        "sendToRedmine": this.activity.comment.sendToRedmine,
+                        "text": this.activity.comment.text
+                    },
+                    "justSet": false,
                     "correction": {
                         "hours": Math.floor(dur.asHours()),
                         "minutes": dur.minutes(),
@@ -34,10 +50,10 @@ jQuery(document).ready(function($) {
                 '<td :class="{validated: activity.type.id !== \'\', unvalidated: activity.type.id === \'\'}">{{ activity.type.name }}</td>'+
                 '<td>{{ activity.comment.text }}</td>'+
                 '<td>'+
-                    '<p v-if="activity.booked.inRedmine"><span class="label booked-redmine">'+loc('Booked in Redmine')+'</span></p>'+ // TODO Redmine Integration
+                    '<p v-if="activity.booked.inRedmine"><span class="label booked-redmine">'+loc('Booked in Redmine')+'</span></p>'+
                     '<p v-else>'+
-                        '<input v-if="activity.project.id !== \'\' && activity.ticket.id !== \'\' && activity.type.id !== \'\'" type="submit" class="foswikiSubmit" @click.stop.prevent="bookInRedmine()" value="'+loc('Book in Redmine')+'">'+
-                        '<input v-else type="submit" class="foswikiSubmitDisabled" value="'+loc('Book in Redmine')+'" disabled>'+ // TODO Tooltip for disabling reason
+                        '<template v-if="activity.project.id !== \'\' && activity.ticket.id !== \'\' && activity.type.id !== \'\'"><input type="submit" class="foswikiSubmit" @click.stop.prevent="bookInRedmine()" value="'+loc('Book in Redmine')+'"></template>'+
+                        '<template v-else><div class="tooltip"><input type="submit" class="foswikiSubmitDisabled" value="'+loc('Book in Redmine')+'" disabled><span class="tooltiptext">'+loc('Booking in Redmine is not possible for this activity, because project, ticket or type is not set to a value from Redmine.')+'</span></div></template>'+
                         '<input v-if="activity.booked.manually" input type="submit" class="foswikiSubmit" @click.stop.prevent="unbook()" value="'+loc('Unbook')+'">'+
                         '<input v-else @click.stop="book()" type="submit" class="foswikiSubmit" value="'+loc('Book')+'">'+
                     '</p>'+
@@ -49,15 +65,18 @@ jQuery(document).ready(function($) {
                     '<button v-if="!activity.booked.inRedmine && !activity.booked.manually" :class="totaltime.running ? \'fa fa-fw fa-lg fa-pause\' : \'fa fa-fw fa-lg fa-play\'" @click.stop="totaltime.running ? stop() : start()"></button>'+
                 '</td>'+
             '</tr>'+
-            '<tr class="details hidden">'+//TODO Redmine integration for editing
+            '<tr class="details hidden">'+
                 '<td colspan="7">'+
                     '<div v-if="!activity.booked.inRedmine && !activity.booked.manually" class="edit">'+
                         '<form @submit.prevent="saveEdit()">'+
                             '<div class="table">'+
-                                '<label class="row"><span class="cell">'+loc('Ticket')+'</span><input type="text" class="cell" id="ticket" v-model="edit.ticket"></label>'+
-                                '<label class="row"><span class="cell">'+loc('Type')+'</span><select class="cell" id="type" v-model="edit.type"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></label>'+
-                                '<label class="row"><span class="cell">'+loc('Comment')+'</span><input type="text" class="cell" id="comment" v-model="edit.comment"></label>'+
-                                '<label class="row"><span class="cell">'+loc('Send comment')+'</span><input type="checkbox" class="cell" id="sendComment" v-model="edit.sendComment"></label>'+
+                                '<label :class="{row: true, validated: edit.project.id !== \'\', unvalidated: edit.project.id === \'\'}"><span class="cell">'+loc('Project')+'</span><input type="text" class="cell" v-model="edit.project.name" debounce="500" list="projectList{{ activity.id }}" id="project"></label>'+
+                                '<datalist id="projectList{{ activity.id }}"><option v-for="suggestion in edit.project.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.name"></datalist>'+
+                                '<label :class="{row: true, validated: edit.ticket.id !== \'\', unvalidated: edit.ticket.id === \'\'}"><span class="cell">'+loc('Ticket')+'</span><input type="text" class="cell" v-model="edit.ticket.subject" debounce="500" list="ticketList{{ activity.id }}" id="ticket"></label>'+
+                                '<datalist id="ticketList{{ activity.id }}"><option v-for="suggestion in edit.ticket.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.subject"></datalist>'+
+                                '<label :class="{row: true, validated: edit.type.id !== \'\', unvalidated: edit.type.id === \'\'}"><span class="cell">'+loc('Type')+'</span><select class="cell" v-model="edit.type.name" id="type"><option v-for="suggestion in edit.type.suggestions" :value="suggestion.name">{{ suggestion.name }}</option></select></label>'+
+                                '<label class="row"><span class="cell">'+loc('Comment')+'</span><input type="text" class="cell" v-model="edit.comment.text" id="comment"></label>'+
+                                '<label class="row"><span class="cell">'+loc('Send comment')+'</span><input type="checkbox" class="cell" v-model="edit.comment.sendToRedmine" id="sendComment"></label>'+
                                 '<label class="row"><span class="cell">'+loc('Correction')+'</span><input type="number" class="small" v-model="edit.correction.hours" number>h  :  <input type="number" class="small" v-model="edit.correction.minutes" number>m</label>'+
                                 '<div class="row">'+
                                     '<input type="submit" class="foswikiSubmit cell" value="'+loc('Save edit')+'">'+
@@ -127,12 +146,17 @@ jQuery(document).ready(function($) {
             },
             // Save the edited data to the activity
             saveEdit: function () {
-                if(this.edit.ticket !== "" || this.edit.type !== "" || this.edit.comment !== "" || this.settings.allowEmptyActivity) { // Prevent empty activity unless setted otherwise
+                if(this.edit.ticket.subject !== "" || this.edit.type.name !== "" || this.edit.comment.text !== "" || this.settings.allowEmptyActivity) { // Prevent empty activity unless setted otherwise
                     // Setting this.activity to a new object does not work
-                    this.activity.ticket.subject = this.edit.ticket;
-                    this.activity.type.name = this.edit.type;
-                    this.activity.comment.sendToRedmine = this.edit.sendComment;
-                    this.activity.comment.text = this.edit.comment;
+                    this.activity.project.id = this.edit.project.id;
+                    this.activity.project.name = this.edit.project.name;
+                    this.activity.ticket.id = this.edit.ticket.id;
+                    this.activity.ticket.subject = this.edit.ticket.subject;
+                    this.activity.type.id = this.edit.type.id;
+                    this.activity.type.name = this.edit.type.name;
+                    this.activity.type.suggestions = this.edit.type.suggestions;
+                    this.activity.comment.sendToRedmine = this.edit.comment.sendToRedmine;
+                    this.activity.comment.text = this.edit.comment.text;
                     this.activity.correction = ((((this.edit.correction.hours * 60) + this.edit.correction.minutes) * 60) + this.edit.correction.seconds) * 1000;
                     this.$root.sendToRest("set", {activities: [this.activity], settings: []});
                     this.toggleDetails();
@@ -141,10 +165,15 @@ jQuery(document).ready(function($) {
             // Cancel the edit and reset the input fields
             cancelEdit: function () {
                 var dur = moment.duration(this.activity.correction);
-                this.edit.ticket = this.activity.ticket.subject,
-                this.edit.type = this.activity.type.name,
-                this.edit.comment = this.activity.comment.text,
-                this.edit.sendComment = this.activity.comment.sendToRedmine,
+                this.edit.project.id = this.activity.project.id;
+                this.edit.project.name = this.activity.project.name;
+                this.edit.ticket.id = this.activity.ticket.id;
+                this.edit.ticket.subject = this.activity.ticket.subject;
+                this.edit.type.id = this.activity.type.id;
+                this.edit.type.name = this.activity.type.name;
+                this.edit.type.suggestions = this.activity.type.suggestions;
+                this.edit.comment.sendToRedmine = this.activity.comment.sendToRedmine;
+                this.edit.comment.text = this.activity.comment.text;
                 this.edit.correction.hours = Math.floor(dur.asHours());
                 this.edit.correction.minutes = dur.minutes();
                 this.edit.correction.seconds = dur.seconds();
@@ -159,7 +188,7 @@ jQuery(document).ready(function($) {
                     this.stop(); // sendToRest is done in stop()
                     data_obj = {
                         project_id: this.activity.project.id,
-                        issue_id: this.activity.ticket.id,
+                        issue_id: this.activity.ticket.id !== 0 ? this.activity.ticket.id : "", // 0 as ticket.id means book directly to project
                         activity_id: this.activity.type.id,
                         hours: this.totaltime.totalHours,
                         comment: this.activity.comment.sendToRedmine ? this.activity.comment.text : ""
@@ -215,6 +244,121 @@ jQuery(document).ready(function($) {
                 var seconds = dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds();
                 return hours+":"+minutes+":"+seconds;
             }
+        },
+        watch: {
+            "edit.project.name": function(newVal, oldVal) {
+                if(this.edit.justSet) {
+                    // Quick exit if set by ticket
+                    this.edit.justSet = false;
+                    return;
+                }
+                this.edit.ticket.id = "";
+                this.edit.ticket.suggestions = [];
+                this.edit.project.id = "";
+                this.edit.type.id = "";
+                this.edit.type.suggestions = [];
+                var re = /^#([\d]+) .+$/;
+                if(newVal.match(re)) {
+                    // Selected one of the suggestions, so query for project description
+                    var projectId = Number(newVal.replace(re, "$1"));
+                    this.edit.project.id = projectId;
+                    // Retrieve the corresponding activity types
+                    $.ajax({
+                        url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
+                        type: 'GET',
+                        dataType: 'json',
+                        data: {q: projectId, type: "activity"}
+                    })
+                    .done(function(result) {
+                        this.edit.type.suggestions = result;
+                        this.edit.type.name = this.edit.type.suggestions[0].name;
+                        this.edit.type.id = this.edit.type.suggestions[0].id;
+                        this.edit.justSet = true;
+                        this.edit.ticket.id = 0;
+                        this.edit.ticket.subject = loc("Book directly to project");
+                    }.bind(this));
+                }
+                // Search for matching projects
+                $.ajax({
+                    url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
+                    type: 'GET',
+                    dataType: 'json',
+                    data: {q: newVal, type: "project"}
+                })
+                .done(function(result) {
+                    this.edit.project.suggestions = result.slice(0, 25); // Limiting the number of results
+                }.bind(this));
+            },
+            "edit.ticket.subject": function(newVal, oldVal) {
+                if(this.edit.justSet) {
+                    // Quick exit if set by project
+                    this.edit.justSet = false;
+                    return;
+                }
+                this.edit.ticket.id = "";
+                this.edit.project.id = "";
+                this.edit.project.suggestions = [];
+                this.edit.type.id = "";
+                this.edit.type.suggestions = [];
+                var re = /^#([\d]+) .+$/;
+                if(newVal.match(re)) {
+                    // Selected one of the suggestions, so query for project description
+                    var ticketId = Number(newVal.replace(re, "$1"));
+                    var projectId;
+                    for(var i in this.edit.ticket.suggestions) {
+                        if(this.edit.ticket.suggestions[i].id === ticketId) {
+                            projectId = this.edit.ticket.suggestions[i].project_id;
+                        }
+                    }
+                    if(projectId) {
+                        this.edit.ticket.id = ticketId;
+                        // Retrieve the corresponding project
+                        $.ajax({
+                            url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
+                            type: 'GET',
+                            dataType: 'json',
+                            data: {q: projectId, type: "project"}
+                        })
+                        .done(function(result) {
+                            if(result.length === 1) {
+                                this.edit.justSet = true;
+                                this.edit.project.id = result[0].id;
+                                this.edit.project.name = result[0].name;
+                            }
+                        }.bind(this));
+                        // Retrieve the corresponding activity types
+                        $.ajax({
+                            url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
+                            type: 'GET',
+                            dataType: 'json',
+                            data: {q: projectId, type: "activity"}
+                        })
+                        .done(function(result) {
+                            this.edit.type.suggestions = result;
+                            this.edit.type.name = this.edit.type.suggestions[0].name;
+                            this.edit.type.id = this.edit.type.suggestions[0].id;
+                        }.bind(this));
+                    }
+                }
+                // Search for matching tickets
+                $.ajax({
+                    url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
+                    type: 'GET',
+                    dataType: 'json',
+                    data: {q: newVal, type: "issue"}
+                })
+                .done(function(result) {
+                    this.edit.ticket.suggestions = result.slice(0, 25); // Limiting the number of results
+                }.bind(this));
+            },
+            "edit.type.name": function(newVal, oldVal) {
+                this.edit.type.id = "";
+                for(var i in this.edit.type.suggestions) {
+                    if(this.edit.type.suggestions[i].name === newVal) {
+                        this.edit.type.id = this.edit.type.suggestions[i].id;
+                    }
+                }
+            }
         }
     });
 
@@ -257,7 +401,7 @@ jQuery(document).ready(function($) {
         data: function () {
             return {
                 "editingPresets": false, // Edit mode for presets
-                "form" : { // Storage for the "new activity form" data
+                "form": { // Storage for the "new activity form" data
                     "project": {
                         "id": "",
                         "name": "",
@@ -291,7 +435,7 @@ jQuery(document).ready(function($) {
                         '<datalist id="ticketList"><option v-for="suggestion in form.ticket.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.subject"></datalist>'+
                         '<label :class="{row: true, validated: form.type.id !== \'\', unvalidated: form.type.id === \'\'}"><span class="cell">'+loc('Type')+'</span><select class="cell" v-model="form.type.name" id="type"><option v-for="suggestion in form.type.suggestions" :value="suggestion.name">{{ suggestion.name }}</option></select></label>'+
                         '<label class="row"><span class="cell">'+loc('Comment')+'</span><input type="text" class="cell" v-model="form.comment.text" id="comment"></label>'+
-                        '<label class="row"><span class="cell">'+loc('Send comment')+'</span><input type="checkbox" class="cell" v-model="form.comment.sendToRedmine"></label>'+
+                        '<label class="row"><span class="cell">'+loc('Send comment')+'</span><input type="checkbox" class="cell" v-model="form.comment.sendToRedmine" id="sendComment"></label>'+
                         '<p class="row"><span class="cell"><input type="submit" class="foswikiSubmit" value="'+loc('Add activity')+'"></span><span class="cell"><input type="submit" class="foswikiButton" @click.stop.prevent="saveAsPreset()" value="'+loc('Save as preset')+'"></span></p>'+
                     '</div>'+
                 '</form>'+
@@ -336,7 +480,8 @@ jQuery(document).ready(function($) {
                             },
                             "type": {
                                 "id": preset.type.id,
-                                "name": preset.type.name
+                                "name": preset.type.name,
+                                "suggestions": preset.type.suggestions
                             },
                             "comment": {
                                 "sendToRedmine": preset.comment.sendToRedmine,
@@ -367,7 +512,8 @@ jQuery(document).ready(function($) {
                             },
                             "type": {
                                 "id": this.form.type.id,
-                                "name": this.form.type.name
+                                "name": this.form.type.name,
+                                "suggestions": this.form.type.suggestions
                             },
                             "comment": {
                                 "sendToRedmine": this.form.comment.sendToRedmine,
@@ -409,17 +555,18 @@ jQuery(document).ready(function($) {
                     var presetName = prompt(loc("Please enter a name for this preset:"));
                     var preset = {
                         "id": moment().valueOf(),
-                        "project": { // TODO
-                            "id": 125,
+                        "project": {
+                            "id": this.form.project.id,
                             "name": this.form.project.name
                         },
-                        "ticket": { // TODO
-                            "id": 125,
+                        "ticket": {
+                            "id": this.form.ticket.id,
                             "subject": this.form.ticket.subject
                         },
                         "type": {
-                            "id": 125, // TODO
-                            "name": this.form.type.name
+                            "id": this.form.type.id,
+                            "name": this.form.type.name,
+                            "suggestions": this.form.type.suggestions
                         },
                         "comment": {
                             "sendToRedmine": this.form.comment.sendToRedmine,
@@ -448,8 +595,7 @@ jQuery(document).ready(function($) {
                 var matchingActivity = false;
                 for(var a in this.activities) {
                     var act = this.activities[a];
-                    if(act.ticket.subject === preset.ticket.subject && act.type.name === preset.type.name && act.comment.text === preset.comment.text && !act.booked.inRedmine && !act.booked.manually) {
-                        // TODO add project and simplify by matching via ids
+                    if(act.project.name === preset.project.name && act.ticket.subject === preset.ticket.subject && act.type.name === preset.type.name && act.comment.text === preset.comment.text && !act.booked.inRedmine && !act.booked.manually) {
                         matchingActivity = act;
                     }
                 }
@@ -1120,7 +1266,13 @@ var dataFormat = {
             },
             "type": {
                 "id": "<redmineTypeID:int>",
-                "name": "<redmineTypeName:String"
+                "name": "<redmineTypeName:String",
+                "suggestions": [
+                    {
+                        "id": "<redmineTypeID:int>",
+                        "name": "<redmineTypeName:String>"
+                    } //, ... more typeSuggestion objects
+                ]
             },
             "comment": {
                 "sendToRedmine": "<:Boolean>",

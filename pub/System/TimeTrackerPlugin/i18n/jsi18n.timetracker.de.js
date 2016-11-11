@@ -5,6 +5,7 @@ jsi18n.add('timetracker', {
     "Book": "Buchen",
     "Book directly to project": "Direkt aufs Projekt buchen",
     "Book in Redmine": "In Redmine buchen",
+    "Booking in Redmine is not possible for this activity, because project, ticket or type is not set to a value from Redmine.": "F&uuml;r diese Aktivit&auml;t ist in Redmine buchen nicht m&ouml;glich, weil Projekt, Ticket oder Typ nicht auf einen Wert aus Redmine gesetzt ist.",
     "Booked in Redmine": "In Redmine gebucht",
     "Cancel edit": "Abbrechen",
     "Comment": "Kommentar",
