@@ -43,11 +43,14 @@ jQuery(document).ready(function($) {
                         "seconds": dur.seconds()
                     }
                 },
+                "showDetails": false,
                 "editingTimeSpans": false // Edit mode for time spans
             }
         },
         template:
             '<tr id="activity{{ activity.id }}" @click="toggleDetails()" :class="{\'booked-redmine\': activity.booked.inRedmine, \'booked-manually\': activity.booked.manually, \'running\': totaltime.running}">'+
+                '<td v-show="showDetails"><i class="fa fa-fw fa-lg fa-caret-down"></i></td>'+
+                '<td v-else><i class="fa fa-fw fa-lg fa-caret-right"></i></td>'+
                 '<td :class="{validated: activity.project.id !== \'\', unvalidated: activity.project.id === \'\'}">{{ activity.project.name }}</td>'+
                 '<td :class="{validated: activity.ticket.id !== \'\', unvalidated: activity.ticket.id === \'\'}">{{ activity.ticket.subject }}</td>'+
                 '<td :class="{validated: activity.type.id !== \'\', unvalidated: activity.type.id === \'\'}">{{ activity.type.name }}</td>'+
@@ -68,8 +71,8 @@ jQuery(document).ready(function($) {
                     '<button v-if="!activity.booked.inRedmine && !activity.booked.manually" :class="totaltime.running ? \'fa fa-fw fa-lg fa-pause\' : \'fa fa-fw fa-lg fa-play\'" @click.stop="totaltime.running ? stop() : start()"></button>'+
                 '</td>'+
             '</tr>'+
-            '<tr class="details hidden">'+
-                '<td colspan="7">'+
+            '<tr :class="{details: true, hidden: !showDetails}">'+
+                '<td colspan="8">'+
                     '<div v-if="!activity.booked.inRedmine && !activity.booked.manually" class="edit">'+
                         '<form @submit.prevent="saveEdit()">'+
                             '<div class="table">'+
@@ -222,7 +225,7 @@ jQuery(document).ready(function($) {
             },
             // This toggles the display of the detailed view of an activity
             toggleDetails: function () {
-                this.$el.nextElementSibling.nextElementSibling.classList.toggle("hidden");
+                this.showDetails = !this.showDetails;
             },
             // Editing the timeSpans
             editTimeSpans: function () {
@@ -390,7 +393,7 @@ jQuery(document).ready(function($) {
                 '</div>'+
                 '<table>'+
                     '<thead>'+
-                        '<tr><th>'+loc('Project')+'</th><th>'+loc('Ticket')+'</th><th>'+loc('Type')+'</th><th>'+loc('Comment')+'</th><th>'+loc('Status')+'</th><th>'+loc('Total time')+'</th><th>'+loc('Run')+'</th></tr>'+
+                        '<tr><th></th><th>'+loc('Project')+'</th><th>'+loc('Ticket')+'</th><th>'+loc('Type')+'</th><th>'+loc('Comment')+'</th><th>'+loc('Status')+'</th><th>'+loc('Total time')+'</th><th>'+loc('Run')+'</th></tr>'+
                     '</thead>'+
                     '<tbody>'+
                         // Add a table row for each activity and apply the vue-activity template defined in ActivityComponent, needed values are passed with :val="val" attribute in parent and props: ['val'] entry in child
