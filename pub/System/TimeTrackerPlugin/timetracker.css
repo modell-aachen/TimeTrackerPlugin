@@ -52,9 +52,8 @@
 #timeTracker tbody tr:not(.booked-redmine) td.unvalidated {
     color: #666666;
 }
-#timeTracker legend span {
-    font-weight: bold;
-    margin-right: 14px;
+#timeTracker form input.marginLeft {
+    margin-left: 14px;
 }
 
 

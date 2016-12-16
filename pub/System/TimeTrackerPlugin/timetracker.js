@@ -58,14 +58,24 @@ jQuery(document).ready(function($) {
                 '<td>'+
                     '<p v-if="activity.booked.inRedmine"><span class="label booked-redmine">'+loc('Booked in Redmine')+'</span></p>'+
                     '<p v-else>'+
-                        '<template v-if="activity.project.id !== \'\' && activity.ticket.id !== \'\' && activity.type.id !== \'\'"><input type="submit" class="foswikiSubmit" @click.stop.prevent="bookInRedmine()" value="'+loc('Book in Redmine')+'"></template>'+
-                        '<template v-else><div class="tooltip"><input type="submit" class="foswikiSubmitDisabled" value="'+loc('Book in Redmine')+'" disabled><span class="tooltiptext">'+loc('Booking in Redmine is not possible for this activity, because project, ticket or type is not set to a value from Redmine.')+'</span></div></template>'+
+                        '<template v-if="activity.project.id !== \'\' && activity.ticket.id !== \'\' && activity.type.id !== \'\'">'+
+                            '<template v-if="totaltime.hours >= 0 && totaltime.minutes >= 0 && totaltime.seconds >= 0">'+
+                                '<input type="submit" class="foswikiSubmit" @click.stop.prevent="bookInRedmine()" value="'+loc('Book in Redmine')+'">'+
+                            '</template>'+
+                            '<template v-else>'+
+                                '<div class="tooltip"><input type="submit" class="foswikiSubmitDisabled" value="'+loc('Book in Redmine')+'" disabled><span class="tooltiptext">'+loc('Booking in Redmine is not possible for this activity, because the total time is negative.')+'</span></div>'+
+                            '</template>'+
+                        '</template>'+
+                        '<template v-else>'+
+                            '<div class="tooltip"><input type="submit" class="foswikiSubmitDisabled" value="'+loc('Book in Redmine')+'" disabled><span class="tooltiptext">'+loc('Booking in Redmine is not possible for this activity, because project, ticket or type is not set to a value from Redmine.')+'</span></div>'+
+                        '</template>'+
                         '<input v-if="activity.booked.manually" input type="submit" class="foswikiSubmit" @click.stop.prevent="unbook()" value="'+loc('Unbook')+'">'+
                         '<input v-else @click.stop="book()" type="submit" class="foswikiSubmit" value="'+loc('Book')+'">'+
                     '</p>'+
                     '<p><span>'+loc('Including comment')+': </span><input type="checkbox" v-model="activity.comment.sendToRedmine" disabled/></p>'+
                 '</td>'+
-                '<td>{{ totaltime.hours }}:{{ totaltime.minutes }}:{{ totaltime.seconds }}<br/>{{ totaltime.totalHours }}h</td>'+
+                '<td v-if="totaltime.hours >= 0 && totaltime.minutes >= 0 && totaltime.seconds >= 0">{{ totaltime.hours }}:{{ totaltime.minutes }}:{{ totaltime.seconds }}<br/>{{ totaltime.totalHours }}h</td>'+
+                '<td v-else>'+loc('Negative')+'<br/>({{ totaltime.totalHours }}h)</td>'+
                 '<td>'+
                     // Depending on whether theres a running timer this button is either a play or a stop button
                     '<button v-if="!activity.booked.inRedmine && !activity.booked.manually" :class="totaltime.running ? \'fa fa-fw fa-lg fa-pause\' : \'fa fa-fw fa-lg fa-play\'" @click.stop="totaltime.running ? stop() : start()"></button>'+
@@ -75,23 +85,26 @@ jQuery(document).ready(function($) {
                 '<td colspan="8">'+
                     '<div v-if="!activity.booked.inRedmine && !activity.booked.manually" class="edit">'+
                         '<form @submit.prevent="saveEdit()">'+
-                            '<div class="table">'+
-                                '<label :class="{row: true, validated: edit.project.id !== \'\', unvalidated: edit.project.id === \'\'}"><span class="cell">'+loc('Project')+'</span><input type="text" class="cell" v-model="edit.project.name" debounce="500" list="projectList{{ activity.id }}" id="project"><i v-show="edit.project.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
-                                '<datalist id="projectList{{ activity.id }}"><option v-for="suggestion in edit.project.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.name"></datalist>'+
-                                '<label :class="{row: true, validated: edit.ticket.id !== \'\', unvalidated: edit.ticket.id === \'\'}"><span class="cell">'+loc('Ticket')+'</span><input type="text" class="cell" v-model="edit.ticket.subject" debounce="500" list="ticketList{{ activity.id }}" id="ticket"><i v-show="edit.ticket.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
-                                '<datalist id="ticketList{{ activity.id }}"><option v-for="suggestion in edit.ticket.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.subject"></datalist>'+
-                                '<label :class="{row: true, validated: edit.type.id !== \'\', unvalidated: edit.type.id === \'\'}"><span class="cell">'+loc('Type')+'</span><select class="cell" v-model="edit.type.name" id="type"><option v-for="suggestion in edit.type.suggestions" :value="suggestion.name">{{ suggestion.name }}</option></select><i v-show="edit.type.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
-                                '<label class="row"><span class="cell">'+loc('Comment')+'</span><input type="text" class="cell" v-model="edit.comment.text" id="comment"></label>'+
-                                '<label class="row"><span class="cell">'+loc('Send comment')+'</span><input type="checkbox" class="cell" v-model="edit.comment.sendToRedmine" id="sendComment"></label>'+
-                                '<label class="row"><span class="cell">'+loc('Correction')+'</span><input type="number" class="small" v-model="edit.correction.hours" number>h  :  <input type="number" class="small" v-model="edit.correction.minutes" number>m</label>'+
-                                '<div class="row">'+
-                                    '<input type="submit" class="foswikiSubmit cell" value="'+loc('Save edit')+'">'+
-                                    '<div class="cell">'+
-                                        '<input type="submit" class="foswikiButton" @click.stop.prevent="cancelEdit()" value="'+loc('Cancel edit')+'">'+
-                                        '<input type="submit" class="foswikiButtonCancel" @click.stop.prevent="delete()" value="'+loc('Delete activity')+'">'+
+                            '<fieldset>'+
+                                '<div class="table">'+
+                                    '<legend><b>'+loc('Edit activity')+'</b></legend>'+
+                                    '<label :class="{row: true, validated: edit.project.id !== \'\', unvalidated: edit.project.id === \'\'}"><span class="cell">'+loc('Project')+'</span><input type="text" class="cell" v-model="edit.project.name" debounce="500" list="projectList{{ activity.id }}" id="project"><i v-show="edit.project.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
+                                    '<datalist id="projectList{{ activity.id }}"><option v-for="suggestion in edit.project.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.name"></datalist>'+
+                                    '<label :class="{row: true, validated: edit.ticket.id !== \'\', unvalidated: edit.ticket.id === \'\'}"><span class="cell">'+loc('Ticket')+'</span><input type="text" class="cell" v-model="edit.ticket.subject" debounce="500" list="ticketList{{ activity.id }}" id="ticket"><i v-show="edit.ticket.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
+                                    '<datalist id="ticketList{{ activity.id }}"><option v-for="suggestion in edit.ticket.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.subject"></datalist>'+
+                                    '<label :class="{row: true, validated: edit.type.id !== \'\', unvalidated: edit.type.id === \'\'}"><span class="cell">'+loc('Type')+'</span><select class="cell" v-model="edit.type.name" id="type"><option v-for="suggestion in edit.type.suggestions" :value="suggestion.name">{{ suggestion.name }}</option></select><i v-show="edit.type.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
+                                    '<label class="row"><span class="cell">'+loc('Comment')+'</span><input type="text" class="cell" v-model="edit.comment.text" id="comment"></label>'+
+                                    '<label class="row"><span class="cell">'+loc('Send comment')+'</span><input type="checkbox" class="cell" v-model="edit.comment.sendToRedmine" id="sendComment"></label>'+
+                                    '<label class="row"><span class="cell">'+loc('Time correction')+'</span><input type="number" class="small" v-model="edit.correction.hours" number>h  :  <input type="number" class="small" v-model="edit.correction.minutes" number>m</label>'+
+                                    '<div class="row">'+
+                                        '<input type="submit" class="foswikiSubmit cell" value="'+loc('Save edit')+'">'+
+                                        '<div class="cell">'+
+                                            '<input type="submit" class="foswikiButton" @click.stop.prevent="cancelEdit()" value="'+loc('Cancel edit')+'">'+
+                                            '<input type="submit" class="foswikiButtonCancel" @click.stop.prevent="delete()" value="'+loc('Delete activity')+'">'+
+                                        '</div>'+
                                     '</div>'+
                                 '</div>'+
-                            '</div>'+
+                            '</fieldset>'+
                         '</form>'+
                     '</div>'+
                     '<div v-else class="edit"></div>'+
@@ -245,9 +258,9 @@ jQuery(document).ready(function($) {
             },
             showDuration: function(ms) {
                 var dur = moment.duration(ms);
-                var hours = dur.asHours() < 10 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours());
-                var minutes = dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes();
-                var seconds = dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds();
+                var hours = dur.asHours() < 10 && dur.asHours() >= 0 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours());
+                var minutes = dur.minutes() < 10 && dur.minutes() >= 0 ? "0"+dur.minutes() : dur.minutes();
+                var seconds = dur.seconds() < 10 && dur.minutes() >= 0 ? "0"+dur.seconds() : dur.seconds();
                 return hours+":"+minutes+":"+seconds;
             }
         },
@@ -297,6 +310,9 @@ jQuery(document).ready(function($) {
                 .done(function(result) {
                     this.edit.project.loading = false;
                     this.edit.project.suggestions = result.slice(0, 25); // Limiting the number of results
+                    var inputField = this.$el.nextElementSibling.nextElementSibling.firstChild.firstChild.firstChild[0];
+                    inputField.blur();
+                    inputField.focus();
                 }.bind(this));
             },
             "edit.ticket.subject": function(newVal, oldVal) {
@@ -353,19 +369,23 @@ jQuery(document).ready(function($) {
                             this.edit.type.id = this.edit.type.suggestions[0].id;
                         }.bind(this));
                     }
+                } else {
+                    // Search for matching tickets
+                    this.edit.ticket.loading = true;
+                    $.ajax({
+                        url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
+                        type: 'GET',
+                        dataType: 'json',
+                        data: {q: newVal, type: "issue"}
+                    })
+                    .done(function(result) {
+                        this.edit.ticket.loading = false;
+                        this.edit.ticket.suggestions = result.slice(0, 25); // Limiting the number of results
+                        var inputField = this.$el.nextElementSibling.nextElementSibling.firstChild.firstChild.firstChild[1];
+                        inputField.blur();
+                        inputField.focus();
+                    }.bind(this));
                 }
-                // Search for matching tickets
-                this.edit.ticket.loading = true;
-                $.ajax({
-                    url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
-                    type: 'GET',
-                    dataType: 'json',
-                    data: {q: newVal, type: "issue"}
-                })
-                .done(function(result) {
-                    this.edit.ticket.loading = false;
-                    this.edit.ticket.suggestions = result.slice(0, 25); // Limiting the number of results
-                }.bind(this));
             },
             "edit.type.name": function(newVal, oldVal) {
                 this.edit.type.id = "";
@@ -447,27 +467,30 @@ jQuery(document).ready(function($) {
         template:
             '<div id="addActivity">'+
                 '<form @submit.prevent="addActivity()">'+
-                    '<div class="table">'+
-                        '<label :class="{row: true, validated: form.project.id !== \'\', unvalidated: form.project.id === \'\'}"><span class="cell">'+loc('Project')+'</span><input type="text" class="cell" v-model="form.project.name" debounce="500" list="projectList" id="project"><i v-show="form.project.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
-                        '<datalist id="projectList"><option v-for="suggestion in form.project.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.name"></datalist>'+
-                        '<label :class="{row: true, validated: form.ticket.id !== \'\', unvalidated: form.ticket.id === \'\'}"><span class="cell">'+loc('Ticket')+'</span><input type="text" class="cell" v-model="form.ticket.subject" debounce="500" list="ticketList" id="ticket"><i v-show="form.ticket.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
-                        '<datalist id="ticketList"><option v-for="suggestion in form.ticket.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.subject"></datalist>'+
-                        '<label :class="{row: true, validated: form.type.id !== \'\', unvalidated: form.type.id === \'\'}"><span class="cell">'+loc('Type')+'</span><select class="cell" v-model="form.type.name" id="type"><option v-for="suggestion in form.type.suggestions" :value="suggestion.name">{{ suggestion.name }}</option></select><i v-show="form.type.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
-                        '<label class="row"><span class="cell">'+loc('Comment')+'</span><input type="text" class="cell" v-model="form.comment.text" id="comment"></label>'+
-                        '<label class="row"><span class="cell">'+loc('Send comment')+'</span><input type="checkbox" class="cell" v-model="form.comment.sendToRedmine" id="sendComment"></label>'+
-                        '<p class="row"><span class="cell"><input type="submit" class="foswikiSubmit" value="'+loc('Add activity')+'"></span><span class="cell"><input type="submit" class="foswikiButton" @click.stop.prevent="saveAsPreset()" value="'+loc('Save as preset')+'"></span></p>'+
-                    '</div>'+
+                    '<fieldset>'+
+                        '<div class="table">'+
+                            '<legend class="row"><b class="cell">'+loc('Add activity')+'</b><span class="cell">'+loc('Enter either project or ticket')+'</span></legend>'+
+                            '<label :class="{row: true, validated: form.project.id !== \'\', unvalidated: form.project.id === \'\'}"><span class="cell">'+loc('Project')+'</span><input type="text" class="cell" v-model="form.project.name" debounce="500" list="projectList" id="project"><i v-show="form.project.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
+                            '<datalist id="projectList"><option v-for="suggestion in form.project.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.name"></datalist>'+
+                            '<label :class="{row: true, validated: form.ticket.id !== \'\', unvalidated: form.ticket.id === \'\'}"><span class="cell">'+loc('Ticket')+'</span><input type="text" class="cell" v-model="form.ticket.subject" debounce="500" list="ticketList" id="ticket"><i v-show="form.ticket.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
+                            '<datalist id="ticketList"><option v-for="suggestion in form.ticket.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.subject"></datalist>'+
+                            '<label :class="{row: true, validated: form.type.id !== \'\', unvalidated: form.type.id === \'\'}"><span class="cell">'+loc('Type')+'</span><select class="cell" v-model="form.type.name" id="type"><option v-for="suggestion in form.type.suggestions" :value="suggestion.name">{{ suggestion.name }}</option></select><i v-show="form.type.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
+                            '<label class="row"><span class="cell">'+loc('Comment')+'</span><input type="text" class="cell" v-model="form.comment.text" id="comment"></label>'+
+                            '<label class="row"><span class="cell">'+loc('Send comment')+'</span><input type="checkbox" class="cell" v-model="form.comment.sendToRedmine" id="sendComment"></label>'+
+                            '<p class="row"><span class="cell"><input type="submit" class="foswikiSubmit" value="'+loc('Add activity')+'"></span><span class="cell"><input type="submit" class="foswikiButton" @click.stop.prevent="saveAsPreset()" value="'+loc('Save as preset')+'"></span></p>'+
+                        '</div>'+
+                    '</fieldset>'+
                 '</form>'+
                 '<form @submit.prevent="">'+
                     '<fieldset>'+
-                        '<legend><span>'+loc('Settings')+'</span></legend>'+
                         '<div class="table">'+
+                            '<legend><b>'+loc('Settings')+'</b></legend>'+
                             '<label class="row"><span class="cell">'+loc('Only one running timer')+'</span><input type="checkbox" class="cell" v-model="settings.onlyOneRunning"></label>'+
                             '<label class="row"><span class="cell">'+loc('Allow empty activity')+'</span><input type="checkbox" class="cell" v-model="settings.allowEmptyActivity"></label>'+
                         '</div>'+
                     '</fieldset>'+
                     '<fieldset>'+
-                        '<legend><span>'+loc('Presets')+'</span><input type="submit" class="foswikiButton" @click.stop.prevent="toggleEditingPresets()" value="'+loc('Edit')+'"></legend>'+
+                        '<legend><b>'+loc('Presets')+'</b><input type="submit" class="foswikiButton marginLeft" @click.stop.prevent="toggleEditingPresets()" value="'+loc('Edit')+'"></legend>'+
                         '<ul>'+
                             '<li v-for="preset in presets">'+
                                 '<input type="submit" class="foswikiButton" @click.stop.prevent="fromPreset(preset.id)" v-model="preset.presetName">'+
@@ -674,19 +697,23 @@ jQuery(document).ready(function($) {
                         this.form.ticket.id = 0;
                         this.form.ticket.subject = loc("Book directly to project");
                     }.bind(this));
+                } else {
+                    // Search for matching projects
+                    this.form.project.loading = true;
+                    $.ajax({
+                        url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
+                        type: 'GET',
+                        dataType: 'json',
+                        data: {q: newVal, type: "project"}
+                    })
+                    .done(function(result) {
+                        this.form.project.loading = false;
+                        this.form.project.suggestions = result.slice(0, 25); // Limiting the number of results
+                        var inputField = this.$el.childNodes[0][0];
+                        inputField.blur();
+                        inputField.focus();
+                    }.bind(this));
                 }
-                // Search for matching projects
-                this.form.project.loading = true;
-                $.ajax({
-                    url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
-                    type: 'GET',
-                    dataType: 'json',
-                    data: {q: newVal, type: "project"}
-                })
-                .done(function(result) {
-                    this.form.project.loading = false;
-                    this.form.project.suggestions = result.slice(0, 25); // Limiting the number of results
-                }.bind(this));
             },
             "form.ticket.subject": function(newVal, oldVal) {
                 if(this.form.justSet) {
@@ -742,19 +769,23 @@ jQuery(document).ready(function($) {
                             this.form.type.id = this.form.type.suggestions[0].id;
                         }.bind(this));
                     }
+                } else {
+                    // Search for matching tickets
+                    this.form.ticket.loading = true;
+                    $.ajax({
+                        url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
+                        type: 'GET',
+                        dataType: 'json',
+                        data: {q: newVal, type: "issue"}
+                    })
+                    .done(function(result) {
+                        this.form.ticket.loading = false;
+                        this.form.ticket.suggestions = result.slice(0, 25); // Limiting the number of results
+                        var inputField = this.$el.childNodes[0][1];
+                        inputField.blur();
+                        inputField.focus();
+                    }.bind(this));
                 }
-                // Search for matching tickets
-                this.form.ticket.loading = true;
-                $.ajax({
-                    url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
-                    type: 'GET',
-                    dataType: 'json',
-                    data: {q: newVal, type: "issue"}
-                })
-                .done(function(result) {
-                    this.form.ticket.loading = false;
-                    this.form.ticket.suggestions = result.slice(0, 25); // Limiting the number of results
-                }.bind(this));
             },
             "form.type.name": function(newVal, oldVal) {
                 this.form.type.id = "";
@@ -826,9 +857,9 @@ jQuery(document).ready(function($) {
                                 totalms: dayTotal,
                                 totalHours: dur.asHours().toFixed(4), // Decimal hours for Redmine
                                 // Store each part of hh:mm:ss with a leading 0 if needed
-                                hours: dur.asHours() < 10 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours()),
-                                minutes: dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes(),
-                                seconds: dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds()
+                                hours: dur.asHours() < 10 && dur.asHours() >= 0 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours()),
+                                minutes: dur.minutes() < 10 && dur.minutes() >= 0 ? "0"+dur.minutes() : dur.minutes(),
+                                seconds: dur.seconds() < 10 && dur.seconds() >= 0 ? "0"+dur.seconds() : dur.seconds()
                             };
                             allTimeTotal += dayTotal;
                         }
@@ -838,9 +869,9 @@ jQuery(document).ready(function($) {
                         totalms: allTimeTotal,
                         totalHours: dur.asHours().toFixed(4), // Decimal hours for Redmine
                         // Store each part of hh:mm:ss with a leading 0 if needed
-                        hours: dur.asHours() < 10 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours()),
-                        minutes: dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes(),
-                        seconds: dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds()
+                        hours: dur.asHours() < 10 && dur.asHours() >= 0 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours()),
+                        minutes: dur.minutes() < 10 && dur.minutes() >= 0 ? "0"+dur.minutes() : dur.minutes(),
+                        seconds: dur.seconds() < 10 && dur.seconds() >= 0 ? "0"+dur.seconds() : dur.seconds()
                     };
                     return res;
                 }
@@ -872,8 +903,8 @@ jQuery(document).ready(function($) {
                 '</table>'+
                 '<form @submit.prevent="">'+
                     '<fieldset>'+
-                        '<legend><span>'+loc('Select time period')+'</span></legend>'+
                         '<div class="table">'+
+                            '<legend><b>'+loc('Select time period')+'</b></legend>'+
                             '<label class="row">'+
                                 '<span class="cell">'+loc('Start date')+'</span>'+
                                 '<input type="number" class="small" v-model="selection.start.day" min="1" max="31" number>.  '+
@@ -945,9 +976,9 @@ jQuery(document).ready(function($) {
                     }
                 }
                 var dur = moment.duration(duration);
-                var hours = dur.asHours() < 10 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours());
-                var minutes = dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes();
-                var seconds = dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds();
+                var hours = dur.asHours() < 10 && dur.asHours() >= 0 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours());
+                var minutes = dur.minutes() < 10 && dur.minutes() >= 0 ? "0"+dur.minutes() : dur.minutes();
+                var seconds = dur.seconds() < 10 && dur.seconds() >= 0 ? "0"+dur.seconds() : dur.seconds();
                 return hours+":"+minutes+":"+seconds;
             },
             isInSelection: function (day) {
@@ -1058,9 +1089,9 @@ jQuery(document).ready(function($) {
                             totalms: totalms,
                             totalHours: dur.asHours().toFixed(4), // Decimal hours for Redmine
                             // Store each part of hh:mm:ss with a leading 0 if needed
-                            hours: dur.asHours() < 10 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours()),
-                            minutes: dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes(),
-                            seconds: dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds()
+                            hours: dur.asHours() < 10 && dur.asHours() >= 0 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours()),
+                            minutes: dur.minutes() < 10 && dur.minutes() >= 0 ? "0"+dur.minutes() : dur.minutes(),
+                            seconds: dur.seconds() < 10 && dur.seconds() >= 0 ? "0"+dur.seconds() : dur.seconds()
                         };
                     }
                 }
@@ -1069,9 +1100,9 @@ jQuery(document).ready(function($) {
                     totalms: todaysTotal,
                     totalHours: dur.asHours().toFixed(4), // Decimal hours for Redmine
                     // Store each part of hh:mm:ss with a leading 0 if needed
-                    hours: dur.asHours() < 10 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours()),
-                    minutes: dur.minutes() < 10 ? "0"+dur.minutes() : dur.minutes(),
-                    seconds: dur.seconds() < 10 ? "0"+dur.seconds() : dur.seconds()
+                    hours: dur.asHours() < 10 && dur.asHours() >= 0 ? "0"+Math.floor(dur.asHours()) : Math.floor(dur.asHours()),
+                    minutes: dur.minutes() < 10 && dur.minutes() >= 0 ? "0"+dur.minutes() : dur.minutes(),
+                    seconds: dur.seconds() < 10 && dur.seconds() >= 0 ? "0"+dur.seconds() : dur.seconds()
                 };
                 return res;
             }
