@@ -5,6 +5,9 @@
 #timeTracker .hidden {
     display: none;
 }
+#timeTracker .marginLeft {
+    margin-left: 14px;
+}
 
 #timeTracker form {
     display: inline-block;
@@ -24,36 +27,36 @@
 #timeTracker span.cell {
     padding-right: 10px;
 }
-#timeTracker form select {
-    width: calc(25em + 6px);
-}
 #timeTracker form input[type="text"] {
     width: 25em;
 }
-#timeTracker form input[type="checkbox"] {
+#timeTracker form input[type="checkbox"] + label {
     margin-left: 0px;
 }
-#timeTracker input.small {
+#timeTracker input[type="number"].small {
+    display: inline-block;
     width: 4em;
 }
-#timeTracker form label.validated {
-    background-color: #00cc66;
+#timeTracker form label {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-weight: 600;
 }
-#timeTracker form label.validated input,
-#timeTracker form label.validated select,
+#timeTracker form p.validated {
+    background-color: #84bb2e;
+}
+#timeTracker form p.validated input,
+#timeTracker form p.validated select,
 #timeTracker tbody tr:not(.booked-redmine) td.validated {
-    color: #00cc66;
+    color: #84bb2e;
 }
-#timeTracker form label.unvalidated {
+#timeTracker form p.unvalidated {
     background-color: #a4b8cc;
 }
-#timeTracker form label.unvalidated input,
-#timeTracker form label.unvalidated select,
+#timeTracker form p.unvalidated input,
+#timeTracker form p.unvalidated select,
 #timeTracker tbody tr:not(.booked-redmine) td.unvalidated {
     color: #666666;
-}
-#timeTracker form input.marginLeft {
-    margin-left: 14px;
 }
 
 
@@ -72,6 +75,7 @@
 #timeTracker tbody tr:not(.details) {
     background-color: #eeeeee;
     cursor: pointer;
+    font-size: 0.9rem;
 }
 #timeTracker tbody tr.running {
     background-color: #cccccc;
@@ -80,7 +84,7 @@
     background-color: #b3ffda;
 }
 #timeTracker tbody tr.booked-redmine {
-    background-color: #00cc66;
+    background-color: #84bb2e;
 }
 #timeTracker span.booked-redmine {
     background-color: white;
@@ -131,10 +135,6 @@
     box-shadow: none;
 }
 
-#timeTracker button {
-    padding: 5px 25px 5px 15px;
-}
-
 #timeTracker #addActivity form {
     float: left;
     margin-right: 10px;
@@ -169,12 +169,12 @@
 
 /* Tooltip from w3schools */
 /* Tooltip container */
-.tooltip {
+#timeTracker .tooltip {
     position: relative;
     display: inline-block;
 }
 /* Tooltip text */
-.tooltip .tooltiptext {
+#timeTracker .tooltip .tooltiptext {
     visibility: hidden;
     width: 300px;
     background-color: #555;
@@ -195,7 +195,7 @@
     transition: opacity 0.5s;
 }
 /* Tooltip arrow */
-.tooltip .tooltiptext::after {
+#timeTracker .tooltip .tooltiptext::after {
     content: "";
     position: absolute;
     top: 100%;
@@ -206,7 +206,13 @@
     border-color: #555 transparent transparent transparent;
 }
 /* Show the tooltip text when you mouse over the tooltip container */
-.tooltip:hover .tooltiptext {
+#timeTracker .tooltip:hover .tooltiptext {
     visibility: visible;
     opacity: 1;
+}
+
+
+/* FlatSkin adjustments */
+#timeTracker .flatskin-wrapped .button
+    margin: 0px;
 }

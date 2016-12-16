@@ -56,29 +56,29 @@ jQuery(document).ready(function($) {
                 '<td :class="{validated: activity.type.id !== \'\', unvalidated: activity.type.id === \'\'}">{{ activity.type.name }}</td>'+
                 '<td>{{ activity.comment.text }}</td>'+
                 '<td>'+
-                    '<p v-if="activity.booked.inRedmine"><span class="label booked-redmine">'+loc('Booked in Redmine')+'</span></p>'+
-                    '<p v-else>'+
+                    '<div v-if="activity.booked.inRedmine"><span class="label booked-redmine">'+loc('Booked in Redmine')+'</span></div>'+
+                    '<div v-else>'+
                         '<template v-if="activity.project.id !== \'\' && activity.ticket.id !== \'\' && activity.type.id !== \'\'">'+
                             '<template v-if="totaltime.hours >= 0 && totaltime.minutes >= 0 && totaltime.seconds >= 0">'+
-                                '<input type="submit" class="foswikiSubmit" @click.stop.prevent="bookInRedmine()" value="'+loc('Book in Redmine')+'">'+
+                                '<input type="submit" class="button primary" @click.stop.prevent="bookInRedmine()" value="'+loc('Book in Redmine')+'">'+
                             '</template>'+
                             '<template v-else>'+
-                                '<div class="tooltip"><input type="submit" class="foswikiSubmitDisabled" value="'+loc('Book in Redmine')+'" disabled><span class="tooltiptext">'+loc('Booking in Redmine is not possible for this activity, because the total time is negative.')+'</span></div>'+
+                                '<div class="tooltip"><input type="submit" class="button primary" value="'+loc('Book in Redmine')+'" disabled><span class="tooltiptext">'+loc('Booking in Redmine is not possible for this activity, because the total time is negative.')+'</span></div>'+
                             '</template>'+
                         '</template>'+
                         '<template v-else>'+
-                            '<div class="tooltip"><input type="submit" class="foswikiSubmitDisabled" value="'+loc('Book in Redmine')+'" disabled><span class="tooltiptext">'+loc('Booking in Redmine is not possible for this activity, because project, ticket or type is not set to a value from Redmine.')+'</span></div>'+
+                            '<div class="tooltip"><input type="submit" class="button primary" value="'+loc('Book in Redmine')+'" disabled><span class="tooltiptext">'+loc('Booking in Redmine is not possible for this activity, because project, ticket or type is not set to a value from Redmine.')+'</span></div>'+
                         '</template>'+
-                        '<input v-if="activity.booked.manually" input type="submit" class="foswikiSubmit" @click.stop.prevent="unbook()" value="'+loc('Unbook')+'">'+
-                        '<input v-else @click.stop="book()" type="submit" class="foswikiSubmit" value="'+loc('Book')+'">'+
-                    '</p>'+
-                    '<p><span>'+loc('Including comment')+': </span><input type="checkbox" v-model="activity.comment.sendToRedmine" disabled/></p>'+
+                        '<input v-if="activity.booked.manually" input type="submit" class="button primary" @click.stop.prevent="unbook()" value="'+loc('Unbook')+'">'+
+                        '<input v-else @click.stop="book()" type="submit" class="button primary marginLeft" value="'+loc('Book')+'">'+
+                    '</div>'+
+                    '<div><span>'+loc('Including comment')+': </span><input type="checkbox" v-model="activity.comment.sendToRedmine" disabled/></div>'+
                 '</td>'+
                 '<td v-if="totaltime.hours >= 0 && totaltime.minutes >= 0 && totaltime.seconds >= 0">{{ totaltime.hours }}:{{ totaltime.minutes }}:{{ totaltime.seconds }}<br/>{{ totaltime.totalHours }}h</td>'+
                 '<td v-else>'+loc('Negative')+'<br/>({{ totaltime.totalHours }}h)</td>'+
                 '<td>'+
                     // Depending on whether theres a running timer this button is either a play or a stop button
-                    '<button v-if="!activity.booked.inRedmine && !activity.booked.manually" :class="totaltime.running ? \'fa fa-fw fa-lg fa-pause\' : \'fa fa-fw fa-lg fa-play\'" @click.stop="totaltime.running ? stop() : start()"></button>'+
+                    '<button v-if="!activity.booked.inRedmine && !activity.booked.manually" class="button primary" @click.stop="totaltime.running ? stop() : start()"><i :class="totaltime.running ? \'fa fa-fw fa-lg fa-pause\' : \'fa fa-fw fa-lg fa-play\'"></i></button>'+
                 '</td>'+
             '</tr>'+
             '<tr :class="{details: true, hidden: !showDetails}">'+
@@ -87,7 +87,7 @@ jQuery(document).ready(function($) {
                         '<form @submit.prevent="saveEdit()">'+
                             '<fieldset>'+
                                 '<div class="table">'+
-                                    '<legend><b>'+loc('Edit activity')+'</b></legend>'+
+                                    '<legend><label>'+loc('Edit activity')+'</label></legend>'+
                                     '<label :class="{row: true, validated: edit.project.id !== \'\', unvalidated: edit.project.id === \'\'}"><span class="cell">'+loc('Project')+'</span><input type="text" class="cell" v-model="edit.project.name" debounce="500" list="projectList{{ activity.id }}" id="project"><i v-show="edit.project.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
                                     '<datalist id="projectList{{ activity.id }}"><option v-for="suggestion in edit.project.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.name"></datalist>'+
                                     '<label :class="{row: true, validated: edit.ticket.id !== \'\', unvalidated: edit.ticket.id === \'\'}"><span class="cell">'+loc('Ticket')+'</span><input type="text" class="cell" v-model="edit.ticket.subject" debounce="500" list="ticketList{{ activity.id }}" id="ticket"><i v-show="edit.ticket.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
@@ -97,10 +97,10 @@ jQuery(document).ready(function($) {
                                     '<label class="row"><span class="cell">'+loc('Send comment')+'</span><input type="checkbox" class="cell" v-model="edit.comment.sendToRedmine" id="sendComment"></label>'+
                                     '<label class="row"><span class="cell">'+loc('Time correction')+'</span><input type="number" class="small" v-model="edit.correction.hours" number>h  :  <input type="number" class="small" v-model="edit.correction.minutes" number>m</label>'+
                                     '<div class="row">'+
-                                        '<input type="submit" class="foswikiSubmit cell" value="'+loc('Save edit')+'">'+
+                                        '<input type="submit" class="button primary cell" value="'+loc('Save edit')+'">'+
                                         '<div class="cell">'+
-                                            '<input type="submit" class="foswikiButton" @click.stop.prevent="cancelEdit()" value="'+loc('Cancel edit')+'">'+
-                                            '<input type="submit" class="foswikiButtonCancel" @click.stop.prevent="delete()" value="'+loc('Delete activity')+'">'+
+                                            '<input type="submit" class="button" @click.stop.prevent="cancelEdit()" value="'+loc('Cancel edit')+'">'+
+                                            '<input type="submit" class="button alert" @click.stop.prevent="delete()" value="'+loc('Delete activity')+'">'+
                                         '</div>'+
                                     '</div>'+
                                 '</div>'+
@@ -131,9 +131,9 @@ jQuery(document).ready(function($) {
                                 '</tr>'+
                             '</tbody>'+
                         '</table>'+
-                        '<input v-show="!editingTimeSpans && !activity.booked.inRedmine && !activity.booked.manually" type="submit" class="foswikiButton" @click.stop.prevent="editTimeSpans()" value="'+loc('Edit timespans')+'">'+
-                        '<input v-show="editingTimeSpans" type="submit" class="foswikiSubmit" @click.stop.prevent="saveTimeSpans()" value="'+loc('Save edit')+'">'+
-                        '<input v-show="editingTimeSpans" type="submit" class="foswikiButtonCancel" @click.stop.prevent="cancelTimeSpans()" value="'+loc('Cancel edit')+'">'+
+                        '<input v-show="!editingTimeSpans && !activity.booked.inRedmine && !activity.booked.manually" type="submit" class="button" @click.stop.prevent="editTimeSpans()" value="'+loc('Edit timespans')+'">'+
+                        '<input v-show="editingTimeSpans" type="submit" class="button primary" @click.stop.prevent="saveTimeSpans()" value="'+loc('Save edit')+'">'+
+                        '<input v-show="editingTimeSpans" type="submit" class="button alert" @click.stop.prevent="cancelTimeSpans()" value="'+loc('Cancel edit')+'">'+
                     '</div>'+
                 '</td>'+
             '</tr>',
@@ -310,7 +310,7 @@ jQuery(document).ready(function($) {
                 .done(function(result) {
                     this.edit.project.loading = false;
                     this.edit.project.suggestions = result.slice(0, 25); // Limiting the number of results
-                    var inputField = this.$el.nextElementSibling.nextElementSibling.firstChild.firstChild.firstChild[0];
+                    var inputField = this.$el.nextElementSibling.nextElementSibling.firstChild.firstChild.firstChild[1];
                     inputField.blur();
                     inputField.focus();
                 }.bind(this));
@@ -368,6 +368,22 @@ jQuery(document).ready(function($) {
                             this.edit.type.name = this.edit.type.suggestions[0].name;
                             this.edit.type.id = this.edit.type.suggestions[0].id;
                         }.bind(this));
+                    } else {
+                        // Search for matching tickets
+                        this.edit.ticket.loading = true;
+                        $.ajax({
+                            url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
+                            type: 'GET',
+                            dataType: 'json',
+                            data: {q: newVal, type: "issue"}
+                        })
+                        .done(function(result) {
+                            this.edit.ticket.loading = false;
+                            this.edit.ticket.suggestions = result.slice(0, 25); // Limiting the number of results
+                            var inputField = this.$el.nextElementSibling.nextElementSibling.firstChild.firstChild.firstChild[2];
+                            inputField.blur();
+                            inputField.focus();
+                        }.bind(this));
                     }
                 } else {
                     // Search for matching tickets
@@ -381,7 +397,7 @@ jQuery(document).ready(function($) {
                     .done(function(result) {
                         this.edit.ticket.loading = false;
                         this.edit.ticket.suggestions = result.slice(0, 25); // Limiting the number of results
-                        var inputField = this.$el.nextElementSibling.nextElementSibling.firstChild.firstChild.firstChild[1];
+                        var inputField = this.$el.nextElementSibling.nextElementSibling.firstChild.firstChild.firstChild[2];
                         inputField.blur();
                         inputField.focus();
                     }.bind(this));
@@ -468,33 +484,29 @@ jQuery(document).ready(function($) {
             '<div id="addActivity">'+
                 '<form @submit.prevent="addActivity()">'+
                     '<fieldset>'+
-                        '<div class="table">'+
-                            '<legend class="row"><b class="cell">'+loc('Add activity')+'</b><span class="cell">'+loc('Enter either project or ticket')+'</span></legend>'+
-                            '<label :class="{row: true, validated: form.project.id !== \'\', unvalidated: form.project.id === \'\'}"><span class="cell">'+loc('Project')+'</span><input type="text" class="cell" v-model="form.project.name" debounce="500" list="projectList" id="project"><i v-show="form.project.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
-                            '<datalist id="projectList"><option v-for="suggestion in form.project.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.name"></datalist>'+
-                            '<label :class="{row: true, validated: form.ticket.id !== \'\', unvalidated: form.ticket.id === \'\'}"><span class="cell">'+loc('Ticket')+'</span><input type="text" class="cell" v-model="form.ticket.subject" debounce="500" list="ticketList" id="ticket"><i v-show="form.ticket.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
-                            '<datalist id="ticketList"><option v-for="suggestion in form.ticket.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.subject"></datalist>'+
-                            '<label :class="{row: true, validated: form.type.id !== \'\', unvalidated: form.type.id === \'\'}"><span class="cell">'+loc('Type')+'</span><select class="cell" v-model="form.type.name" id="type"><option v-for="suggestion in form.type.suggestions" :value="suggestion.name">{{ suggestion.name }}</option></select><i v-show="form.type.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
-                            '<label class="row"><span class="cell">'+loc('Comment')+'</span><input type="text" class="cell" v-model="form.comment.text" id="comment"></label>'+
-                            '<label class="row"><span class="cell">'+loc('Send comment')+'</span><input type="checkbox" class="cell" v-model="form.comment.sendToRedmine" id="sendComment"></label>'+
-                            '<p class="row"><span class="cell"><input type="submit" class="foswikiSubmit" value="'+loc('Add activity')+'"></span><span class="cell"><input type="submit" class="foswikiButton" @click.stop.prevent="saveAsPreset()" value="'+loc('Save as preset')+'"></span></p>'+
-                        '</div>'+
+                        '<legend><label>'+loc('Add activity')+'</label><span class="marginLeft">'+loc('Enter either project or ticket')+'</span></legend>'+
+                        '<p :class="{validated: form.project.id !== \'\', unvalidated: form.project.id === \'\'}"><label>'+loc('Project')+'</label><input type="text" v-model="form.project.name" debounce="500" list="projectList" id="project"><i v-show="form.project.loading" class="fa fa-lg fa-spin fa-spinner"></i></p>'+
+                        '<datalist id="projectList"><option v-for="suggestion in form.project.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.name"></datalist>'+
+                        '<p :class="{validated: form.ticket.id !== \'\', unvalidated: form.ticket.id === \'\'}"><label>'+loc('Ticket')+'</label><input type="text" v-model="form.ticket.subject" debounce="500" list="ticketList" id="ticket"><i v-show="form.ticket.loading" class="fa fa-lg fa-spin fa-spinner"></i></p>'+
+                        '<datalist id="ticketList"><option v-for="suggestion in form.ticket.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.subject"></datalist>'+
+                        '<p :class="{validated: form.type.id !== \'\', unvalidated: form.type.id === \'\'}"><label>'+loc('Type')+'</label><select v-model="form.type.name" id="type"><option v-for="suggestion in form.type.suggestions" :value="suggestion.name">{{ suggestion.name }}</option></select><i v-show="form.type.loading" class="fa fa-lg fa-spin fa-spinner"></i></p>'+
+                        '<p><label>'+loc('Comment')+'</label><input type="text" v-model="form.comment.text" id="comment"></p>'+
+                        '<input type="checkbox" v-model="form.comment.sendToRedmine" id="sendComment"><label for="sendComment">'+loc('Send comment')+'</label>'+
+                        '<p><input type="submit" class="button primary" value="'+loc('Add activity')+'"><input type="submit" class="button marginLeft" @click.stop.prevent="saveAsPreset()" value="'+loc('Save as preset')+'"></p>'+
                     '</fieldset>'+
                 '</form>'+
                 '<form @submit.prevent="">'+
                     '<fieldset>'+
-                        '<div class="table">'+
-                            '<legend><b>'+loc('Settings')+'</b></legend>'+
-                            '<label class="row"><span class="cell">'+loc('Only one running timer')+'</span><input type="checkbox" class="cell" v-model="settings.onlyOneRunning"></label>'+
-                            '<label class="row"><span class="cell">'+loc('Allow empty activity')+'</span><input type="checkbox" class="cell" v-model="settings.allowEmptyActivity"></label>'+
-                        '</div>'+
+                        '<legend><label>'+loc('Settings')+'</label></legend>'+
+                        '<p class="row"><input type="checkbox" v-model="settings.onlyOneRunning"><label>'+loc('Only one running timer')+'</label></p>'+
+                        '<p class="row"><input type="checkbox" v-model="settings.allowEmptyActivity"><label>'+loc('Allow empty activity')+'</label></p>'+
                     '</fieldset>'+
                     '<fieldset>'+
-                        '<legend><b>'+loc('Presets')+'</b><input type="submit" class="foswikiButton marginLeft" @click.stop.prevent="toggleEditingPresets()" value="'+loc('Edit')+'"></legend>'+
+                        '<legend><label>'+loc('Presets')+'</label><input type="submit" class="button small marginLeft" @click.stop.prevent="toggleEditingPresets()" value="'+loc('Edit')+'"></legend>'+
                         '<ul>'+
                             '<li v-for="preset in presets">'+
-                                '<input type="submit" class="foswikiButton" @click.stop.prevent="fromPreset(preset.id)" v-model="preset.presetName">'+
-                                '    <input v-show="editingPresets" type="submit" class="foswikiButtonCancel" @click.stop.prevent="deletePreset(preset.id)" value="'+loc('Delete')+'">'+
+                                '<input type="submit" class="button small" @click.stop.prevent="fromPreset(preset.id)" v-model="preset.presetName">'+
+                                '<input v-show="editingPresets" type="submit" class="button alert" @click.stop.prevent="deletePreset(preset.id)" value="'+loc('Delete')+'">'+
                             '</li>'+
                         '</ul>'+
                     '</fieldset>'+
@@ -709,7 +721,7 @@ jQuery(document).ready(function($) {
                     .done(function(result) {
                         this.form.project.loading = false;
                         this.form.project.suggestions = result.slice(0, 25); // Limiting the number of results
-                        var inputField = this.$el.childNodes[0][0];
+                        var inputField = this.$el.childNodes[0][1];
                         inputField.blur();
                         inputField.focus();
                     }.bind(this));
@@ -768,6 +780,22 @@ jQuery(document).ready(function($) {
                             this.form.type.name = this.form.type.suggestions[0].name;
                             this.form.type.id = this.form.type.suggestions[0].id;
                         }.bind(this));
+                    } else {
+                        // Search for matching tickets
+                        this.form.ticket.loading = true;
+                        $.ajax({
+                            url: foswiki.getPreference('SCRIPTURL')+"/rest/RedmineIntegrationPlugin/search_redmine",
+                            type: 'GET',
+                            dataType: 'json',
+                            data: {q: newVal, type: "issue"}
+                        })
+                        .done(function(result) {
+                            this.form.ticket.loading = false;
+                            this.form.ticket.suggestions = result.slice(0, 25); // Limiting the number of results
+                            var inputField = this.$el.childNodes[0][2];
+                            inputField.blur();
+                            inputField.focus();
+                        }.bind(this));
                     }
                 } else {
                     // Search for matching tickets
@@ -781,7 +809,7 @@ jQuery(document).ready(function($) {
                     .done(function(result) {
                         this.form.ticket.loading = false;
                         this.form.ticket.suggestions = result.slice(0, 25); // Limiting the number of results
-                        var inputField = this.$el.childNodes[0][1];
+                        var inputField = this.$el.childNodes[0][2];
                         inputField.blur();
                         inputField.focus();
                     }.bind(this));
@@ -904,7 +932,7 @@ jQuery(document).ready(function($) {
                 '<form @submit.prevent="">'+
                     '<fieldset>'+
                         '<div class="table">'+
-                            '<legend><b>'+loc('Select time period')+'</b></legend>'+
+                            '<legend><label>'+loc('Select time period')+'</label></legend>'+
                             '<label class="row">'+
                                 '<span class="cell">'+loc('Start date')+'</span>'+
                                 '<input type="number" class="small" v-model="selection.start.day" min="1" max="31" number>.  '+
@@ -1022,25 +1050,27 @@ jQuery(document).ready(function($) {
             }
         },
         template:
-            '<div class="jqTabPane jqTabPaneSimple jqInitedTabpane jqTabPaneInitialized">'+
-                '<ul class="jqTabGroup">'+
-                    '<li :class="activeTab === \'today\' ? \'current\' : \'\'">'+
-                        '<a v-if="$root.isOnWebHome" @click.stop.prevent="setActiveTab(\'today\')">'+loc('Todays activities')+'</a>'+
-                        '<a v-else @click.stop.prevent="setActiveTab(\'today\')">'+loc('Activities from ')+'{{ $root.topicDate }}'+'</a>'+
-                    '</li>'+
-                    '<li :class="activeTab === \'overview\' ? \'current\' : \'\'">'+
-                        '<a @click.stop.prevent="setActiveTab(\'overview\')">'+loc('Overview')+'</a>'+
-                    '</li>'+
-                '</ul>'+
-                '<span class="foswikiClear"></span>'+
-                '<div v-show="activeTab === \'today\'" class="jqTab current">'+
-                    '<vue-activity-table :activities="activities" :totaltimes="totaltimes" :saving="saving" :currentms="currentms" :settings="settings"></vue-activity-table>'+
-                    '<vue-add-activity v-if="$root.isOnWebHome" :activities="activities" :settings="settings" :presets="presets"></vue-add-activity>'+
+            '<div class="flatskin-wrapped">'+
+                '<div class="jqTabPane jqTabPaneSimple jqInitedTabpane jqTabPaneInitialized">'+
+                    '<ul class="jqTabGroup">'+
+                        '<li :class="activeTab === \'today\' ? \'current\' : \'\'">'+
+                            '<a v-if="$root.isOnWebHome" @click.stop.prevent="setActiveTab(\'today\')">'+loc('Todays activities')+'</a>'+
+                            '<a v-else @click.stop.prevent="setActiveTab(\'today\')">'+loc('Activities from ')+'{{ $root.topicDate }}'+'</a>'+
+                        '</li>'+
+                        '<li :class="activeTab === \'overview\' ? \'current\' : \'\'">'+
+                            '<a @click.stop.prevent="setActiveTab(\'overview\')">'+loc('Overview')+'</a>'+
+                        '</li>'+
+                    '</ul>'+
                     '<span class="foswikiClear"></span>'+
-                '</div>'+
-                '<div v-show="activeTab === \'overview\'" class="jqTab current">'+
-                    '<vue-overview :currentms="currentms" :days="days"></vue-overview>'+
-                    '<span class="foswikiClear"></span>'+
+                    '<div v-show="activeTab === \'today\'" class="jqTab current">'+
+                        '<vue-activity-table :activities="activities" :totaltimes="totaltimes" :saving="saving" :currentms="currentms" :settings="settings"></vue-activity-table>'+
+                        '<vue-add-activity v-if="$root.isOnWebHome" :activities="activities" :settings="settings" :presets="presets"></vue-add-activity>'+
+                        '<span class="foswikiClear"></span>'+
+                    '</div>'+
+                    '<div v-show="activeTab === \'overview\'" class="jqTab current">'+
+                        '<vue-overview :currentms="currentms" :days="days"></vue-overview>'+
+                        '<span class="foswikiClear"></span>'+
+                    '</div>'+
                 '</div>'+
             '</div>',
         components: {

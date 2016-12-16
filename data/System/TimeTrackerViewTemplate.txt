@@ -7,7 +7,13 @@
 }%%JQREQUIRE{"tabpane"}%%{
 }%%ADDTOZONE{
     "head"
+    id="font-awesome"
     text="<link rel=\"stylesheet\" href=\"%PUBURL%/System/FontAwesomeContrib/css/font-awesome.min.css\"/>"
+}%%{
+}%%ADDTOZONE{
+    "head"
+    requires="font-awesome"
+    text="<link rel=\"stylesheet\" href=\"%PUBURL%/System/FlatSkin/css/flatskin_wrapped.css\"/>"
 }%%{
 }%%ADDTOZONE{
     "script"
