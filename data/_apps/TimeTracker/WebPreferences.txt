@@ -3,3 +3,4 @@
    * Set ALLOWWEBRENAME = %USERSWEB%.AdminGroup
    * Set ALLOWTOPICCHANGE = AllUsersGroup
    * Set ALLOWTOPICRENAME = %USERSWEB%.AdminGroup
+   * Set NO_MODAC_HEAD = 1
