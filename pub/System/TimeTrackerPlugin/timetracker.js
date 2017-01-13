@@ -57,7 +57,7 @@ jQuery(document).ready(function($) {
                 '<td>{{ activity.comment.text }}</td>'+
                 '<td>'+
                     '<div v-if="activity.booked.inRedmine"><span class="label booked-redmine">'+loc('Booked in Redmine')+'</span></div>'+
-                    '<div v-else>'+
+                    '<div v-else class="nobr">'+
                         '<template v-if="activity.project.id !== \'\' && activity.ticket.id !== \'\' && activity.type.id !== \'\'">'+
                             '<template v-if="totaltime.hours >= 0 && totaltime.minutes >= 0 && totaltime.seconds >= 0">'+
                                 '<input type="submit" class="button primary" @click.stop.prevent="bookInRedmine()" value="'+loc('Book in Redmine')+'">'+
@@ -72,7 +72,10 @@ jQuery(document).ready(function($) {
                         '<input v-if="activity.booked.manually" input type="submit" class="button primary" @click.stop.prevent="unbook()" value="'+loc('Unbook')+'">'+
                         '<input v-else @click.stop="book()" type="submit" class="button primary marginLeft" value="'+loc('Book')+'">'+
                     '</div>'+
-                    '<div><span>'+loc('Including comment')+': </span><input type="checkbox" v-model="activity.comment.sendToRedmine" disabled/></div>'+
+                    '<div>'+
+                        '<span v-show="activity.comment.sendToRedmine">'+loc('Including comment')+'</span>'+
+                        '<span v-else>'+loc('Without comment')+'</span>'+
+                    '</div>'+
                 '</td>'+
                 '<td v-if="totaltime.hours >= 0 && totaltime.minutes >= 0 && totaltime.seconds >= 0">{{ totaltime.hours }}:{{ totaltime.minutes }}:{{ totaltime.seconds }}<br/>{{ totaltime.totalHours }}h</td>'+
                 '<td v-else>'+loc('Negative')+'<br/>({{ totaltime.totalHours }}h)</td>'+
@@ -87,22 +90,16 @@ jQuery(document).ready(function($) {
                         '<form @submit.prevent="saveEdit()">'+
                             '<fieldset>'+
                                 '<div class="table">'+
-                                    '<legend><label>'+loc('Edit activity')+'</label></legend>'+
-                                    '<label :class="{row: true, validated: edit.project.id !== \'\', unvalidated: edit.project.id === \'\'}"><span class="cell">'+loc('Project')+'</span><input type="text" class="cell" v-model="edit.project.name" debounce="500" list="projectList{{ activity.id }}" id="project"><i v-show="edit.project.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
+                                    '<legend><label>'+loc('Edit activity')+'</label><span class="marginLeft">'+loc('Enter either project or ticket')+'</span></legend>'+
+                                    '<p :class="{validated: edit.project.id !== \'\', unvalidated: edit.project.id === \'\'}"><label>'+loc('Project')+'</label><input type="text" v-model="edit.project.name" debounce="500" list="projectList{{ activity.id }}" id="project{{ activity.id }}"><i v-show="edit.project.loading" class="fa fa-lg fa-spin fa-spinner"></i></p>'+
                                     '<datalist id="projectList{{ activity.id }}"><option v-for="suggestion in edit.project.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.name"></datalist>'+
-                                    '<label :class="{row: true, validated: edit.ticket.id !== \'\', unvalidated: edit.ticket.id === \'\'}"><span class="cell">'+loc('Ticket')+'</span><input type="text" class="cell" v-model="edit.ticket.subject" debounce="500" list="ticketList{{ activity.id }}" id="ticket"><i v-show="edit.ticket.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
+                                    '<p :class="{validated: edit.ticket.id !== \'\', unvalidated: edit.ticket.id === \'\'}"><label>'+loc('Ticket')+'</label><input type="text" v-model="edit.ticket.subject" debounce="500" list="ticketList{{ activity.id }}" id="ticket{{ activity.id }}"><i v-show="edit.ticket.loading" class="fa fa-lg fa-spin fa-spinner"></i></p>'+
                                     '<datalist id="ticketList{{ activity.id }}"><option v-for="suggestion in edit.ticket.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.subject"></datalist>'+
-                                    '<label :class="{row: true, validated: edit.type.id !== \'\', unvalidated: edit.type.id === \'\'}"><span class="cell">'+loc('Type')+'</span><select class="cell" v-model="edit.type.name" id="type"><option v-for="suggestion in edit.type.suggestions" :value="suggestion.name">{{ suggestion.name }}</option></select><i v-show="edit.type.loading" class="fa fa-lg fa-spin fa-spinner"></i></label>'+
-                                    '<label class="row"><span class="cell">'+loc('Comment')+'</span><input type="text" class="cell" v-model="edit.comment.text" id="comment"></label>'+
-                                    '<label class="row"><span class="cell">'+loc('Send comment')+'</span><input type="checkbox" class="cell" v-model="edit.comment.sendToRedmine" id="sendComment"></label>'+
-                                    '<label class="row"><span class="cell">'+loc('Time correction')+'</span><input type="number" class="small" v-model="edit.correction.hours" number>h  :  <input type="number" class="small" v-model="edit.correction.minutes" number>m</label>'+
-                                    '<div class="row">'+
-                                        '<input type="submit" class="button primary cell" value="'+loc('Save edit')+'">'+
-                                        '<div class="cell">'+
-                                            '<input type="submit" class="button" @click.stop.prevent="cancelEdit()" value="'+loc('Cancel edit')+'">'+
-                                            '<input type="submit" class="button alert" @click.stop.prevent="delete()" value="'+loc('Delete activity')+'">'+
-                                        '</div>'+
-                                    '</div>'+
+                                    '<p :class="{validated: edit.type.id !== \'\', unvalidated: edit.type.id === \'\'}"><label>'+loc('Type')+'</label><select v-model="edit.type.name" id="type{{ activity.id }}"><option v-for="suggestion in edit.type.suggestions" :value="suggestion.name">{{ suggestion.name }}</option></select><i v-show="edit.type.loading" class="fa fa-lg fa-spin fa-spinner"></i></p>'+
+                                    '<p><label>'+loc('Comment')+'</label><input type="text" v-model="edit.comment.text" id="comment{{ activity.id }}"></p>'+
+                                    '<p><input type="checkbox" v-model="edit.comment.sendToRedmine" id="sendComment{{ activity.id }}"><label for="sendComment{{ activity.id }}">'+loc('Send comment')+'</label></p>'+
+                                    '<p><label>'+loc('Time correction')+'</label><br><input type="number" class="small" v-model="edit.correction.hours" number>h  :  <input type="number" class="small" v-model="edit.correction.minutes" number>m</p>'+
+                                    '<p><input type="submit" class="button primary" value="'+loc('Save edit')+'"><input type="submit" class="button marginLeft" @click.stop.prevent="cancelEdit()" value="'+loc('Cancel edit')+'"><input type="submit" class="button alert marginLeft" @click.stop.prevent="delete()" value="'+loc('Delete activity')+'"></p>'+
                                 '</div>'+
                             '</fieldset>'+
                         '</form>'+
@@ -491,15 +488,15 @@ jQuery(document).ready(function($) {
                         '<datalist id="ticketList"><option v-for="suggestion in form.ticket.suggestions" :value="\'#\'+suggestion.id+\'  \'+suggestion.subject"></datalist>'+
                         '<p :class="{validated: form.type.id !== \'\', unvalidated: form.type.id === \'\'}"><label>'+loc('Type')+'</label><select v-model="form.type.name" id="type"><option v-for="suggestion in form.type.suggestions" :value="suggestion.name">{{ suggestion.name }}</option></select><i v-show="form.type.loading" class="fa fa-lg fa-spin fa-spinner"></i></p>'+
                         '<p><label>'+loc('Comment')+'</label><input type="text" v-model="form.comment.text" id="comment"></p>'+
-                        '<input type="checkbox" v-model="form.comment.sendToRedmine" id="sendComment"><label for="sendComment">'+loc('Send comment')+'</label>'+
+                        '<p><input type="checkbox" v-model="form.comment.sendToRedmine" id="sendComment"><label for="sendComment">'+loc('Send comment')+'</label></p>'+
                         '<p><input type="submit" class="button primary" value="'+loc('Add activity')+'"><input type="submit" class="button marginLeft" @click.stop.prevent="saveAsPreset()" value="'+loc('Save as preset')+'"></p>'+
                     '</fieldset>'+
                 '</form>'+
                 '<form @submit.prevent="">'+
                     '<fieldset>'+
                         '<legend><label>'+loc('Settings')+'</label></legend>'+
-                        '<p class="row"><input type="checkbox" v-model="settings.onlyOneRunning"><label>'+loc('Only one running timer')+'</label></p>'+
-                        '<p class="row"><input type="checkbox" v-model="settings.allowEmptyActivity"><label>'+loc('Allow empty activity')+'</label></p>'+
+                        '<p class="row"><input type="checkbox" v-model="settings.onlyOneRunning" id="onlyOneRunning"><label for="onlyOneRunning">'+loc('Only one running timer')+'</label></p>'+
+                        '<p class="row"><input type="checkbox" v-model="settings.allowEmptyActivity" id="allowEmptyActivity"><label for="allowEmptyActivity">'+loc('Allow empty activity')+'</label></p>'+
                     '</fieldset>'+
                     '<fieldset>'+
                         '<legend><label>'+loc('Presets')+'</label><input type="submit" class="button small marginLeft" @click.stop.prevent="toggleEditingPresets()" value="'+loc('Edit')+'"></legend>'+
@@ -931,25 +928,20 @@ jQuery(document).ready(function($) {
                 '</table>'+
                 '<form @submit.prevent="">'+
                     '<fieldset>'+
-                        '<div class="table">'+
-                            '<legend><label>'+loc('Select time period')+'</label></legend>'+
-                            '<label class="row">'+
-                                '<span class="cell">'+loc('Start date')+'</span>'+
-                                '<input type="number" class="small" v-model="selection.start.day" min="1" max="31" number>.  '+
-                                '<input type="number" class="small" v-model="selection.start.month" min="1" max="12" number>.  '+
-                                '<input type="number" class="small" v-model="selection.start.year" min="1970" number>'+
-                            '</label>'+
-                            '<label class="row">'+
-                                '<span class="cell">'+loc('End date')+'</span>'+
-                                '<input type="number" class="small" v-model="selection.end.day" min="1" max="31" number>.  '+
-                                '<input type="number" class="small" v-model="selection.end.month" min="1" max="12" number>.  '+
-                                '<input type="number" class="small" v-model="selection.end.year" min="1970" number>'+
-                            '</label>'+
-                            '<label class="row">'+
-                                '<span class="cell">'+loc('Only running')+'</span>'+
-                                '<input type="checkbox" class="cell" v-model="selection.onlyRunning">'+
-                            '</label>'+
-                        '</div>'+
+                        '<legend><label>'+loc('Select time period')+'</label></legend>'+
+                        '<p>'+
+                            '<label>'+loc('Start date')+'</label><br>'+
+                            '<input type="number" class="small" v-model="selection.start.day" min="1" max="31" number>.  '+
+                            '<input type="number" class="small" v-model="selection.start.month" min="1" max="12" number>.  '+
+                            '<input type="number" class="small" v-model="selection.start.year" min="1970" number>'+
+                        '</p>'+
+                        '<p>'+
+                            '<label>'+loc('End date')+'</label><br>'+
+                            '<input type="number" class="small" v-model="selection.end.day" min="1" max="31" number>.  '+
+                            '<input type="number" class="small" v-model="selection.end.month" min="1" max="12" number>.  '+
+                            '<input type="number" class="small" v-model="selection.end.year" min="1970" number>'+
+                        '</p>'+
+                        '<p><input type="checkbox" v-model="selection.onlyRunning" id="onlyRunning"><label for="onlyRunning">'+loc('Only running')+'</label></p>'+
                     '</fieldset>'+
                 '</form>'+
             '</div>'+
@@ -1272,7 +1264,9 @@ jQuery(document).ready(function($) {
                         }
                         // Add saved presets
                         for(var p in answer.settedSettings) {
-                            this.presets.push(answer.settedSettings[p].value);
+                            if(typeof(answer.settedSettings[p].value) === "object") {
+                                this.presets.push(answer.settedSettings[p].value);
+                            }
                         }
                         this.saving.openSaves--;
                         this.checkSaves();

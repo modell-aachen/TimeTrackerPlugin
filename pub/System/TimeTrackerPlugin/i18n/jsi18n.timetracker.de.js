@@ -47,6 +47,7 @@ jsi18n.add('timetracker', {
     "Total time": "Gesamtzeit",
     "Type": "Typ",
     "Unbook": "R&uuml;ckbuchen",
+    "Without comment": "Ohne Kommentar",
 
     "Booking in Redmine is not possible for this activity, because project, ticket or type is not set to a value from Redmine.": "F&uuml;r diese Aktivit&auml;t ist in Redmine buchen nicht m&ouml;glich, weil Projekt, Ticket oder Typ nicht auf einen Wert aus Redmine gesetzt ist.",
     "Booking in Redmine is not possible for this activity, because the total time is negative.": "F&uuml;r diese Aktivit&auml;t ist in Redmine buchen nicht m&ouml;glich, weil die Gesamtzeit negativ ist.",

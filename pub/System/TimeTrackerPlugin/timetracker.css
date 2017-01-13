@@ -8,6 +8,15 @@
 #timeTracker .marginLeft {
     margin-left: 14px;
 }
+#timeTracker .nobr {
+    white-space: nowrap;
+    width: intrinsic;           /* Safari/WebKit uses a non-standard name */
+    width: -moz-max-content;    /* Firefox/Gecko */
+    width: -webkit-max-content; /* Chrome */
+}
+#timeTracker .nobr * {
+    white-space: normal;
+}
 
 #timeTracker form {
     display: inline-block;
@@ -35,7 +44,7 @@
 }
 #timeTracker input[type="number"].small {
     display: inline-block;
-    width: 4em;
+    width: 5em;
 }
 #timeTracker form label {
     display: inline-block;
@@ -77,14 +86,26 @@
     cursor: pointer;
     font-size: 0.9rem;
 }
+#timeTracker tbody tr:not(.details):hover {
+    background-color: #dddddd;
+}
 #timeTracker tbody tr.running {
     background-color: #cccccc;
+}
+#timeTracker tbody tr.running:hover {
+    background-color: #bbbbbb;
 }
 #timeTracker tbody tr.booked-manually {
     background-color: #b3ffda;
 }
+#timeTracker tbody tr.booked-manually:hover {
+    background-color: #a2eec9;
+}
 #timeTracker tbody tr.booked-redmine {
     background-color: #84bb2e;
+}
+#timeTracker tbody tr.booked-redmine:hover {
+    background-color: #73aa1d;
 }
 #timeTracker span.booked-redmine {
     background-color: white;
@@ -165,6 +186,7 @@
 }
 #timeTracker #daySelection tr {
     cursor: unset;
+    background-color: #eeeeee;
 }
 
 /* Tooltip from w3schools */
