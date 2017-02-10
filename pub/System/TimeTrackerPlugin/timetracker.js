@@ -1019,7 +1019,7 @@ jQuery(document).ready(function($) {
                 return s[6]+s[7]+"."+s[4]+s[5]+"."+s[0]+s[1]+s[2]+s[3];
             },
             jumpTo: function (day) {
-                var topicUrl = foswiki.getPreference('SCRIPTURL')+"/view/TimeTracker/"+foswiki.getPreference('WIKINAME')+"_"+day;
+                var topicUrl = foswiki.getPreference('SCRIPTURL')+"/view/"+foswiki.getPreference('WEB')+"/"+foswiki.getPreference('WIKINAME')+"_"+day;
                 window.document.location = topicUrl;
             }
         },
