@@ -202,12 +202,17 @@ jQuery(document).ready(function($) {
             bookInRedmine: function () {
                 if(this.activity.project.id !== "" && this.activity.ticket.id !== "" && this.activity.type.id !== "") {
                     this.stop(); // sendToRest is done in stop()
+                    var comment = this.activity.comment.text;
+                    if(!this.activity.comment.sendToRedmine || comment == "") {
+                        comment = " ";
+                    }
+
                     data_obj = {
                         project_id: this.activity.project.id,
                         issue_id: this.activity.ticket.id !== 0 ? this.activity.ticket.id : "", // 0 as ticket.id means book directly to project
                         activity_id: this.activity.type.id,
                         hours: this.totaltime.totalHours,
-                        comment: this.activity.comment.sendToRedmine ? this.activity.comment.text : "",
+                        comment: comment,
                         date: this.$root.topicDate
                     };
                     // Send to Redmine
@@ -221,6 +226,10 @@ jQuery(document).ready(function($) {
                     .done(function(result) {
                         this.activity.booked.inRedmine = true;
                         this.$root.sendToRest("set", {activities: [this.activity], settings: []});
+                    }.bind(this))
+                    .fail(function(xhr, status, error) {
+                        console.error("Error during sending to RedmineIntegrationPlugin. xhr, status and error are:", xhr, status, error);
+                        this.$root.saving.redmineError = true;
                     }.bind(this));
                 }
             },
@@ -423,6 +432,10 @@ jQuery(document).ready(function($) {
                 '</div>'+
                 '<div v-if="saving.errored && !saving.refused" id="errorMessage">'+loc('Something went wrong during saving the data in the topics meta data. '+
                     'Please have a look at the red marked activities and redo any edits/deletions. '+
+                    'Alternatively you can reload the page to discard every unsaved changes and display the currently saved status.')+
+                '</div>'+
+                '<div v-if="saving.redmineError" id="redmineErrorMessage">'+loc('Something went wrong during saving the data in Redmine. '+
+                    'Please have a look at the not booked activities and compare them with the entries in Redmine. '+
                     'Alternatively you can reload the page to discard every unsaved changes and display the currently saved status.')+
                 '</div>'+
                 '<table>'+
@@ -1163,7 +1176,8 @@ jQuery(document).ready(function($) {
                 "notSaved": [], // Storing ids of every activity that is not exactly like this at the server
                 "openSaves": 0, // Number of save operations to be handled from rest
                 "errored": false, // Has something went wrong and was not correctly saved
-                "refused": false // Was saving refused
+                "refused": false, // Was saving refused
+                "redmineError": false // Something went wrong with redmine
             },
             "activities": [], // Activities stored in Meta for today land here
             "presets": [], // Presets stored in Meta of settings land here

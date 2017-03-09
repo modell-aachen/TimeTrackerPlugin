@@ -116,12 +116,14 @@
 }
 #timeTracker .errored,
 #timeTracker #errorMessage,
-#timeTracker #refusedMessage {
+#timeTracker #refusedMessage,
+#timeTracker #redmineErrorMessage {
     background-color: #FF4444 !important;
 }
 #timeTracker #errorMessage,
-#timeTracker #refusedMessage {
-    max-width: 1160px;
+#timeTracker #refusedMessage,
+#timeTracker #redmineErrorMessage {
+    max-width: 1200px;
     padding: 20px;
     font-size: 150%;
     line-height: 150%;
