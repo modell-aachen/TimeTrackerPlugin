@@ -48,9 +48,9 @@ jQuery(document).ready(function($) {
             }
         },
         template:
-            '<tr id="activity{{ activity.id }}" @click="toggleDetails()" :class="{\'booked-redmine\': activity.booked.inRedmine, \'booked-manually\': activity.booked.manually, \'running\': totaltime.running}">'+
-                '<td v-show="showDetails"><i class="fa fa-fw fa-lg fa-caret-down"></i></td>'+
-                '<td v-else><i class="fa fa-fw fa-lg fa-caret-right"></i></td>'+
+            '<tr id="activity{{ activity.id }}" @click="!activity.booked.inRedmine && !activity.booked.manually && (totaltime.running ? stop() : start())" :class="{\'booked-redmine\': activity.booked.inRedmine, \'booked-manually\': activity.booked.manually, \'running\': totaltime.running}">'+
+                '<td v-show="showDetails" @click.stop="toggleDetails()" class="toggleDetails"><i class="fa fa-fw fa-lg fa-caret-down"></i></td>'+
+                '<td v-else @click.stop="toggleDetails()" class="toggleDetails"><i class="fa fa-fw fa-lg fa-caret-right"></i></td>'+
                 '<td :class="{validated: activity.project.id !== \'\', unvalidated: activity.project.id === \'\'}">{{ activity.project.name }}</td>'+
                 '<td :class="{validated: activity.ticket.id !== \'\', unvalidated: activity.ticket.id === \'\'}">{{ activity.ticket.subject }}</td>'+
                 '<td :class="{validated: activity.type.id !== \'\', unvalidated: activity.type.id === \'\'}">{{ activity.type.name }}</td>'+

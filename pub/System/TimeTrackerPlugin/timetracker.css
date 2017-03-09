@@ -95,17 +95,15 @@
 #timeTracker tbody tr.running:hover {
     background-color: #bbbbbb;
 }
-#timeTracker tbody tr.booked-manually {
-    background-color: #b3ffda;
-}
+#timeTracker tbody tr.booked-manually,
 #timeTracker tbody tr.booked-manually:hover {
-    background-color: #a2eec9;
+    background-color: #b3ffda;
+    cursor: default;
 }
-#timeTracker tbody tr.booked-redmine {
-    background-color: #84bb2e;
-}
+#timeTracker tbody tr.booked-redmine,
 #timeTracker tbody tr.booked-redmine:hover {
-    background-color: #73aa1d;
+    background-color: #84bb2e;
+    cursor: default;
 }
 #timeTracker span.booked-redmine {
     display: inline-block;
@@ -114,6 +112,7 @@
     background-color: white;
     color: #24a866;
 }
+/* Error messages */
 #timeTracker .errored,
 #timeTracker #errorMessage,
 #timeTracker #refusedMessage,
@@ -128,7 +127,16 @@
     font-size: 150%;
     line-height: 150%;
 }
+/* Details button */
+#timeTracker .toggleDetails {
+    cursor: pointer;
+    background-color: #FFF4;
+}
+#timeTracker .toggleDetails:hover {
+    background-color: #0004;
+}
 
+/* Details */
 #timeTracker .details > td {
     text-align: center;
 }
