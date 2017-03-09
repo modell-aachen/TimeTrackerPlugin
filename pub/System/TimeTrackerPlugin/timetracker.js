@@ -56,7 +56,7 @@ jQuery(document).ready(function($) {
                 '<td :class="{validated: activity.type.id !== \'\', unvalidated: activity.type.id === \'\'}">{{ activity.type.name }}</td>'+
                 '<td>{{ activity.comment.text }}</td>'+
                 '<td>'+
-                    '<div v-if="activity.booked.inRedmine"><span class="label booked-redmine">'+loc('Booked in Redmine')+'</span></div>'+
+                    '<div v-if="activity.booked.inRedmine" class="nobr"><span class="label booked-redmine">'+loc('Booked in Redmine')+'</span></div>'+
                     '<div v-else class="nobr">'+
                         '<template v-if="activity.project.id !== \'\' && activity.ticket.id !== \'\' && activity.type.id !== \'\'">'+
                             '<template v-if="totaltime.hours >= 0 && totaltime.minutes >= 0 && totaltime.seconds >= 0">'+
@@ -69,10 +69,10 @@ jQuery(document).ready(function($) {
                         '<template v-else>'+
                             '<div class="tooltip"><input type="submit" class="button primary" value="'+loc('Book in Redmine')+'" disabled><span class="tooltiptext">'+loc('Booking in Redmine is not possible for this activity, because project, ticket or type is not set to a value from Redmine.')+'</span></div>'+
                         '</template>'+
-                        '<input v-if="activity.booked.manually" input type="submit" class="button primary" @click.stop.prevent="unbook()" value="'+loc('Unbook')+'">'+
+                        '<input v-if="activity.booked.manually" input type="submit" class="button primary marginLeft" @click.stop.prevent="unbook()" value="'+loc('Unbook')+'">'+
                         '<input v-else @click.stop="book()" type="submit" class="button primary marginLeft" value="'+loc('Book')+'">'+
                     '</div>'+
-                    '<div>'+
+                    '<div class="nobr">'+
                         '<span v-show="activity.comment.sendToRedmine">'+loc('Including comment')+'</span>'+
                         '<span v-else>'+loc('Without comment')+'</span>'+
                     '</div>'+

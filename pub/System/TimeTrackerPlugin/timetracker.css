@@ -77,7 +77,7 @@
 }
 #timeTracker th {
     text-align: left;
-    padding: 15px 3px;
+    padding: 1rem 0.625rem;
     background-color: #003c89;
     color: #ffffff;
 }
@@ -108,9 +108,10 @@
     background-color: #73aa1d;
 }
 #timeTracker span.booked-redmine {
+    display: inline-block;
+    padding: 0.85em 1em;
+    margin-bottom: 1rem;
     background-color: white;
-    padding: 7px 15px;
-    border-radius: 5px;
     color: #24a866;
 }
 #timeTracker .errored,
@@ -163,6 +164,7 @@
 
 #timeTracker #total {
     max-width: 1200px;
+    font-weight: 600;
 }
 #timeTracker #total div {
     float: right;
