@@ -207,7 +207,8 @@ jQuery(document).ready(function($) {
                         issue_id: this.activity.ticket.id !== 0 ? this.activity.ticket.id : "", // 0 as ticket.id means book directly to project
                         activity_id: this.activity.type.id,
                         hours: this.totaltime.totalHours,
-                        comment: this.activity.comment.sendToRedmine ? this.activity.comment.text : ""
+                        comment: this.activity.comment.sendToRedmine ? this.activity.comment.text : "",
+                        date: this.$root.topicDate
                     };
                     // Send to Redmine
                     $.ajax({
